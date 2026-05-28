@@ -142,6 +142,11 @@ The company reviewed the project proposal and shared an official Offer Acceptanc
 
 This demonstrates the practical business value and commercial presentation capability of the project.
 
+Offer Acceptance Letter Attached | Bull Rix AI Project
+[Gmail - Offer Acceptance Letter Attached _ Bull Rix AI Project.pdf](https://github.com/user-attachments/files/28332911/Gmail.-.Offer.Acceptance.Letter.Attached._.Bull.Rix.AI.Project.pdf)
+[Bull_Rix_AI_Offer_Acceptance_Agrim_Jain.pdf](https://github.com/user-attachments/files/28332894/Bull_Rix_AI_Offer_Acceptance_Agrim_Jain.pdf)
+
+
 ---
 
 # 👨‍💻 Developer
