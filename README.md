@@ -1,3 +1,4 @@
+
 # BullRix AI 📈🤖
 
 ## AI-Powered Stock Intelligence & Analytics Platform
@@ -112,6 +113,10 @@ http://localhost:5173
 ## Dashboard Interface
 
 <img width="100%" src="./screenshots/dashboard-home.png"/>
+
+<img width="2490" height="1333" alt="Screenshot 2026-05-28 095817" src="https://github.com/user-attachments/assets/5220a8e5-5915-42e7-ac6e-3328055ee4d4" />
+
+
 
 ## Trending Stock Insights
 
