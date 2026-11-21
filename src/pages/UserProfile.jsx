@@ -1,11 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, ShieldCheck, Mail, Calendar, Key, CheckCircle2, Award, Zap } from 'lucide-react';
+import { User, ShieldCheck, Mail, Calendar, Key, CheckCircle2, Award, Zap, Sun, Moon, Palette } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Link } from 'react-router-dom';
 
 const UserProfile = () => {
   const { user } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   return (
     <div className="pt-28 pb-16 px-4 lg:px-8 max-w-4xl mx-auto flex flex-col gap-8">
@@ -14,7 +16,7 @@ const UserProfile = () => {
           Analyst Profile & Identity
         </h1>
         <p className="text-xs sm:text-sm text-[#8E9CAE] mt-1">
-          Manage your verified institutional access credentials and API consumption quotas.
+          Manage your verified institutional access credentials, active visual themes, and API quotas.
         </p>
       </div>
 
@@ -42,6 +44,13 @@ const UserProfile = () => {
             <span className="px-3 py-1 rounded-xl bg-white/5 text-[#54D6B0] border border-white/5">
               Auth: {user.authProvider ? user.authProvider.toUpperCase() : 'DEMO'}
             </span>
+            <button
+              onClick={toggleTheme}
+              className="px-3 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/5 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Palette size={13} className="text-[#54D6B0]" />
+              <span>Theme: {isDark ? 'Dark (Navy)' : 'Light (Cloud)'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -69,7 +78,7 @@ const UserProfile = () => {
 
       <div className="flex justify-end">
         <Link to="/settings" className="btn-secondary text-xs font-bold">
-          Configure Application Settings →
+          Configure Full Application Settings →
         </Link>
       </div>
     </div>

@@ -1,13 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BullRix AI | Indian Stock Intelligence</title>
-    <meta name="description" content="Premium AI-powered Indian stock intelligence dashboard for real-time analysis and recommendations." />
+    <title>BullRix AI 2.0 | Global Financial Intelligence & Stock Research Platform</title>
+    <meta name="description" content="AI-powered global equity intelligence and quantitative research platform covering Indian (NSE/BSE) and International (NASDAQ/NYSE) markets." />
+    <!-- Immediate theme resolution script to prevent flash of wrong theme -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('bullrix_theme');
+          var pref = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          var theme = saved || pref;
+          document.documentElement.classList.remove('dark', 'light');
+          document.documentElement.classList.add(theme);
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#0a0a0c]">
+  <body class="transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

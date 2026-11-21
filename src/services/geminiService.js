@@ -1,54 +1,57 @@
 /**
  * Generative AI Financial Research Engine (Google Gemini API)
- * Dedicated server-side & client-fallback AI intelligence interface.
- * Strictly adheres to financial guidelines: NEVER invents fake prices or claims live news access
- * when disconnected. Formats responses with clear structured reasoning, risk analysis, and citations.
+ * Professional AI financial research assistant supporting markets, money, and ideas.
+ * Answers general questions, explains financial concepts, assists with stock research,
+ * compares companies, and calculates portfolio metrics with clear source attribution.
  */
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const GeminiFinancialAI = {
   /**
-   * Conversational Financial Intelligence Stream or Async Response
+   * Conversational Financial Intelligence Response
    */
   async askFinancialAnalyst({ prompt, contextStock = null, conversationHistory = [] }) {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
 
-    // Structured Financial System Prompt
-    const systemPrompt = `You are the BullRix AI 2.0 Lead Financial Intelligence Analyst.
-Your role is to provide deep, objective, institutional-grade equity analysis for Indian (NSE/BSE) and Global markets.
-Strict Rules:
-1. NEVER invent current prices or stock volumes. If provided in the context, refer strictly to provided metrics with explicit timestamp attribution.
-2. If real-time data is unavailable or delayed, explicitly state: "[Note: Analysis based on last documented exchange snapshots]".
-3. Frame conclusions around empirical risk/reward, valuation multiples, competitive moats, and technical trends.
-4. Structure responses cleanly with Markdown headers, bullet points, and a specific "Risk Matrix & Limitations" section.
-5. Provide actionable follow-up considerations. Do NOT guarantee returns. End with an institutional disclaimer.`;
+    // Professional Research Assistant System Prompt
+    const systemPrompt = `You are BullRix Assistant, a generic, professional AI financial research assistant.
+Your goal is to be an intelligence companion for markets, money, and ideas.
+Capabilities:
+1. Answer general financial, business, and conceptual questions clearly.
+2. Explain financial metrics (P/E, ROE, RSI, MACD, EBITDA) with simple intuitive analogies.
+3. Help with stock research, company comparisons, and industry trends across Indian (NSE/BSE) and Global markets.
+4. Assist with portfolio calculations and risk management principles.
+5. If the user asks a general knowledge question, answer it directly without forcing it into a stock recommendation.
+6. Clearly distinguish between:
+   - General financial knowledge (facts and definitions)
+   - Real market data (use provided context with timestamp attribution)
+   - Algorithmic or statistical projections (always label model uncertainty)
+7. Admit uncertainty honestly when specific information is unavailable or unverified.
+8. Formatting Rules: Format cleanly in standard Markdown with clean bolding (**bold**), bullet points (* item), and clean headings. NEVER output repeated malformed asterisks like '****'.`;
 
-    // Construct request messages
     const contents = [];
 
-    // Prior context injection
+    // Context Injection if specific stock is queried or selected
     let contextNote = '';
     if (contextStock) {
-      contextNote = `\n[VERIFIED MARKET SNAPSHOT]\nSymbol: ${contextStock.symbol} (${contextStock.name})\nExchange: ${contextStock.exchange} (${contextStock.market})\nPrice: ${contextStock.price} ${contextStock.currency || 'INR'} (Change: ${contextStock.percentChange}%)\nRSI: ${contextStock.rsi || 'N/A'} | Trend: ${contextStock.trend}\nP/E: ${contextStock.pe || 'N/A'} | 52W Range: ${contextStock.low52} - ${contextStock.high52}\nSector: ${contextStock.sector}\nDescription: ${contextStock.description}\n`;
+      contextNote = `\n[VERIFIED MARKET SNAPSHOT]\nSymbol: ${contextStock.symbol} (${contextStock.name})\nExchange: ${contextStock.exchange} (${contextStock.market})\nPrice: ${contextStock.price} ${contextStock.currency || 'INR'} (Change: ${contextStock.percentChange}%)\nSector: ${contextStock.sector} | P/E: ${contextStock.pe || 'N/A'}\n52W Range: ${contextStock.low52} - ${contextStock.high52} | RSI: ${contextStock.rsi || 'N/A'}\nDescription: ${contextStock.description}\n`;
     }
 
     // Append conversation history
-    conversationHistory.slice(-6).forEach((msg) => {
+    conversationHistory.slice(-8).forEach((msg) => {
       contents.push({
         role: msg.isBot ? 'model' : 'user',
         parts: [{ text: msg.text }]
       });
     });
 
-    // Append current prompt with context
     contents.push({
       role: 'user',
-      parts: [{ text: `${contextNote}\n\nUser Question: ${prompt}` }]
+      parts: [{ text: `${contextNote ? `${contextNote}\n\n` : ''}${prompt}` }]
     });
 
     if (!apiKey || apiKey.includes('your_gemini_api_key')) {
-      // Deterministic Institutional Fallback Engine (Zero Hallucination)
       return this.generateDeterministicAnalysis(prompt, contextStock);
     }
 
@@ -61,7 +64,7 @@ Strict Rules:
           contents,
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: {
-            temperature: 0.2,
+            temperature: 0.3,
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 1200
@@ -70,8 +73,6 @@ Strict Rules:
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.warn('Gemini API returned error, falling back to deterministic engine:', errorData);
         return this.generateDeterministicAnalysis(prompt, contextStock);
       }
 
@@ -81,60 +82,84 @@ Strict Rules:
 
       return this.generateDeterministicAnalysis(prompt, contextStock);
     } catch (err) {
-      console.warn('Network error reaching Gemini, activating deterministic analysis engine:', err);
       return this.generateDeterministicAnalysis(prompt, contextStock);
     }
   },
 
   /**
-   * Deterministic institutional analytical generator when API keys are not provided
+   * Deterministic Fallback Engine (Generic & Professional)
    */
   generateDeterministicAnalysis(query, stock) {
     const q = query.toLowerCase();
 
+    // 1. Specific Stock Inquiry
     if (stock) {
-      return `### Quantitative Intelligence Report: ${stock.name} (${stock.symbol})
-**Market Verification:** ${stock.exchange} • ${stock.market} • Sector: ${stock.sector}  
-**Last Logged Price:** ₹${stock.price.toLocaleString('en-IN')} (${stock.percentChange >= 0 ? '+' : ''}${stock.percentChange}%)
+      return `### Research Brief: ${stock.name} (${stock.symbol})
+**Exchange:** ${stock.exchange} • Sector: ${stock.sector}  
+**Last Documented Price:** ${stock.market === 'US' ? '$' : '₹'}${stock.price.toLocaleString()} (${stock.percentChange >= 0 ? '+' : ''}${stock.percentChange}%)
 
----
+* **Business Overview:** ${stock.description}
+* **Valuation & Fundamentals:** P/E of **${stock.pe || 'N/A'}** with market cap at **${stock.marketCap}**. 52-week trading span ranges between **${stock.low52} and ${stock.high52}**.
+* **Technical Trend:** Identified as **${stock.trend}** with an RSI of **${stock.rsi || 50}**.
+* **Risk Considerations:** Operating margin sensitivity to macro sector cycles and broader benchmark volatility.
 
-#### 1. Technical & Momentum Dynamics
-* **Relative Strength Index (RSI):** \`${stock.rsi || 55}\` — ${stock.rsi > 70 ? 'Overbought region; watch for mean reversion.' : stock.rsi < 35 ? 'Oversold condition; bottoming pattern possible.' : 'Constructive consolidation inside neutral-bullish band.'}
-* **Trend Structure:** **${stock.trend}**. Volatility index rated at **${stock.volatilityScore}/100** indicating ${stock.volatilityScore > 20 ? 'elevated beta sensitivity' : 'orderly institutional accumulation'}.
-* **Key Range Pivot:** Buy Range estimated at \`₹${stock.buyRange}\` with downside risk invalidation (Stop Loss) stationed at \`₹${stock.stopLoss}\`.
-
-#### 2. Valuation & Fundamental Quality
-* **P/E Ratio:** \`${stock.pe || 'N/A'}\` vs Sector Medians.
-* **Capital Discipline:** Market capitalization stands at **${stock.marketCap}** with a 52-week trading span of **₹${stock.low52} – ₹${stock.high52}**.
-* **Corporate Profile:** ${stock.description}
-
-#### 3. Risk Factors & Downside Scenarios
-1. **Macro / Inflationary Pressures:** Input cost variations and central bank monetary guidance may influence operating margins.
-2. **Execution Timing:** Premature entry outside the documented support band (\`₹${stock.buyRange}\`) introduces drawdown volatility.
-
----
-*Disclaimer: Generated via BullRix AI 2.0 Quantitative Engine. Educational and research intelligence only; not registered investment advice.*`;
+*Note: Algorithmic assessment based on last documented exchange snapshots.*`;
     }
 
-    if (q.includes('nifty') || q.includes('sensex') || q.includes('market') || q.includes('trend')) {
-      return `### Macro Financial Overview: Indian & Global Exchanges
-**Status:** Market Data Engine Active • Delay Factor: 15-min documented
+    // 2. Relative Strength Index (RSI) Explanation
+    if (q.includes('rsi') || q.includes('relative strength')) {
+      return `### Understanding the Relative Strength Index (RSI)
 
-#### Key Observations:
-* **NIFTY 50 & SENSEX:** Resilient institutional flows (DII absorption balancing FII volatility) support consolidation near all-time benchmarks.
-* **Global Correlation (NASDAQ / S&P 500):** AI semiconductor capital expenditure remains buoyant, providing upward guidance to Indian tech enterprise exporters.
-* **Currency & Energy:** USD/INR stable near 84.45 with Brent Crude softening below $83/bbl, benefiting Indian Oil Marketing Companies (OMCs) and consumer inflation.
+The **Relative Strength Index (RSI)** is a popular technical momentum oscillator that measures the velocity and magnitude of recent price changes on a scale from 0 to 100.
 
-**Recommended Strategic Focus:** Prioritize large-cap sector leaders showing high ROE and clean balance sheets in Banking, Energy, and Quick Commerce.`;
+* **Overbought Region (> 70):** Indicates that an asset has experienced rapid upward momentum and may be due for a consolidation or price pullback.
+* **Oversold Region (< 30):** Suggests that selling pressure has been intense, and the price might be primed for a technical rebound or mean-reversion.
+* **Centerline (50):** Reflects a balanced equilibrium between buyers and sellers.
+
+**Pro-Tip:** In strong trending bull markets, RSI can remain above 70 for extended intervals; it is best combined with support/resistance levels and volume confirmation.`;
     }
 
-    return `### BullRix AI Institutional Research Assistant
-I can analyze technical momentum, risk frameworks, valuation multiples, and rolling news sentiment for any asset across:
-* **Indian Equities:** NSE (NIFTY 50, Banking, IT, Conglomerates)
-* **Global Benchmarks:** NASDAQ 100, S&P 500, NYSE Tech
-* **Research Disciplines:** RSI analysis, stop-loss calculations, 14-day news verification, and annual report filings.
+    // 3. Portfolio Diversification
+    if (q.includes('diversification') || q.includes('portfolio')) {
+      return `### Principles of Portfolio Diversification
 
-Try querying: *"Analyze RELIANCE momentum"*, *"What are the key risks for NVIDIA?"*, or *"Compare HDFCBANK and TCS"*.`;
+**Diversification** is the practice of spreading investments across different asset classes, sectors, and geographies to reduce unsystematic (company-specific) risk without necessarily sacrificing expected returns.
+
+1. **Asset Class Balance:** Allocate capital across Equities, Fixed Income, Cash Equivalents, and Commodities (Gold).
+2. **Sector Non-Correlation:** Avoid clustering capital in a single sector (e.g., balancing high-beta Tech with defensive FMCG or Banking).
+3. **Geographical Exposure:** Combining Indian domestic consumption leaders (NSE) with global technology innovators (NASDAQ) cushions against localized macroeconomic slowdowns.
+4. **Periodic Rebalancing:** Trim positions that have outgrown their target weights to maintain your intended risk tolerance.`;
+    }
+
+    // 4. Comparison (e.g., NVIDIA vs AMD)
+    if (q.includes('nvidia') && q.includes('amd')) {
+      return `### Comparative Snapshot: NVIDIA (NVDA) vs. AMD (AMD)
+
+* **Market Focus:**
+  * **NVIDIA:** Undisputed market leader in enterprise AI datacenter acceleration with its CUDA software moat and Blackwell architecture.
+  * **AMD:** Strong multi-platform innovator advancing EPYC server CPUs and scaling Instinct MI300 series AI accelerators.
+* **Valuation & Margins:** NVIDIA commands higher gross margins (> 70%) owing to full-stack datacenter platform pricing, whereas AMD offers diversified exposure across gaming, embedded processors, and server computing.
+* **Key Catalyst to Monitor:** Hyperscaler capital expenditure continuity and software ecosystem adoption across enterprise workflows.`;
+    }
+
+    // 5. General Market Overview
+    if (q.includes('trend') || q.includes('market') || q.includes('nifty') || q.includes('today')) {
+      return `### Macro Financial Market Summary
+
+* **Indian Benchmark Indices (NIFTY 50 & SENSEX):** Indian equity markets remain resilient, backed by steady Domestic Institutional Investor (DII) systematic inflows and solid balance sheet health across major private banks and infrastructure contractors.
+* **Global Exchanges (NASDAQ & S&P 500):** Driven by hyperscaler AI infrastructure capex announcements, with semiconductor capital goods exhibiting high relative strength.
+* **Commodities & Currencies:** Stable crude oil prices near $82/bbl provide margin comfort for import-dependent emerging markets, with USD/INR trading in an orderly band.`;
+    }
+
+    // 6. Generic Polite Research Response
+    return `### How Can I Help Your Research?
+
+I am your financial research intelligence companion. I can assist you with:
+* **Company & Stock Analysis:** Deep-dives into Reliance, TCS, HDFC Bank, NVIDIA, Apple, and 30+ other leaders.
+* **Financial Concepts & Metrics:** Clear explanations of P/E ratios, DCF valuation, Beta, and technical indicators.
+* **Macro & Market Trends:** Indian (NSE/BSE) and Global (NASDAQ/NYSE) performance updates.
+* **Portfolio Calculations:** Diversification strategies, risk-adjusted returns, and position sizing.
+
+Feel free to ask any question or try one of the suggested prompts below!`;
   }
 };

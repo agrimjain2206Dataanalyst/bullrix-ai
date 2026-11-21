@@ -1,11 +1,9 @@
 /**
- * Market Data Service Layer
- * Supports Indian (NSE/BSE) and Global (NASDAQ, S&P 500, DOW JONES) indices and equities.
- * Features a provider abstraction layer to plug in live Yahoo Finance, Screener.in, or Fallback.
- * Flags delayed vs live data explicitly to maintain financial integrity.
+ * Scalable Financial Market Data Service & Instrument Master
+ * Covers broad Indian (NSE/BSE) and Global (NASDAQ, NYSE, S&P 500, Dow Jones) universes.
+ * Provides live/delayed quotes, comprehensive sector coverage, and multi-period candlestick series.
  */
 
-// Major Global & Indian Benchmark Indices
 export const BENCHMARK_INDICES = [
   {
     symbol: '^NSEI',
@@ -38,8 +36,23 @@ export const BENCHMARK_INDICES = [
     delayMinutes: 15
   },
   {
+    symbol: '^NSEBANK',
+    name: 'BANK NIFTY',
+    exchange: 'NSE',
+    market: 'India',
+    price: 48201.05,
+    change: 254.10,
+    percentChange: 0.53,
+    high: 48390.00,
+    low: 48010.50,
+    currency: 'INR',
+    status: 'Market Closed',
+    isDelayed: true,
+    delayMinutes: 15
+  },
+  {
     symbol: '^IXIC',
-    name: 'NASDAQ',
+    name: 'NASDAQ 100',
     exchange: 'NASDAQ',
     market: 'US',
     price: 18987.42,
@@ -96,29 +109,65 @@ export const BENCHMARK_INDICES = [
     status: 'Live',
     isDelayed: false,
     delayMinutes: 0
+  },
+  {
+    symbol: 'BZ=F',
+    name: 'BRENT CRUDE',
+    exchange: 'Commodity',
+    market: 'Global',
+    price: 82.30,
+    change: -1.15,
+    percentChange: -1.38,
+    high: 83.90,
+    low: 81.80,
+    currency: 'USD',
+    status: 'Live',
+    isDelayed: false,
+    delayMinutes: 0
   }
 ];
 
-// Comprehensive Multi-Market Stock Universe (India + US Tech/Bluechips)
+export const SECTORS = [
+  'All',
+  'Banking & Financial Services',
+  'IT & Technology',
+  'Automobile & EV',
+  'Pharma & Healthcare',
+  'FMCG',
+  'Energy & Power',
+  'Infrastructure',
+  'Metals & Mining',
+  'Defence & Aerospace',
+  'Renewable Energy',
+  'Telecommunications',
+  'Consumer Tech & Platforms',
+  'Semiconductors & AI'
+];
+
 export const MARKET_UNIVERSE = [
-  // Indian Large & Mid-Caps
+  // ==========================================
+  // INDIAN EQUITIES (NSE / BSE)
+  // ==========================================
   {
     id: 'reliance',
     symbol: 'RELIANCE',
     name: 'Reliance Industries Ltd.',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Energy & Conglomerate',
+    sector: 'Energy & Power',
+    industry: 'Oil, Gas & Consumer Retail',
     price: 2954.30,
     change: 35.45,
     percentChange: 1.22,
+    marketCapNum: 2001240,
     marketCap: '₹20,01,240 Cr',
-    marketCapCategory: 'Large',
+    marketCapCategory: 'Mega',
     pe: 28.4,
     pb: 2.3,
     dividendYield: 0.34,
     high52: 3024.90,
     low52: 2220.30,
+    volumeNum: 5400000,
     volume: '5.4M',
     avgVolume: '6.1M',
     volatilityScore: 12,
@@ -130,7 +179,7 @@ export const MARKET_UNIVERSE = [
     sellTarget: '3200',
     stopLoss: '2840',
     riskLevel: 'Low',
-    description: 'India’s premier conglomerate with leading market presence in hydrocarbon refining, retail, telecommunications (Jio), and renewable clean energy.',
+    description: 'India’s premier conglomerate with market dominance across refining, retail, telecom (Jio), and green hydrogen energy ecosystems.',
     isDelayed: true
   },
   {
@@ -139,17 +188,20 @@ export const MARKET_UNIVERSE = [
     name: 'Tata Consultancy Services',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Information Technology',
+    sector: 'IT & Technology',
+    industry: 'IT Services & Consulting',
     price: 3845.00,
     change: -19.20,
     percentChange: -0.50,
+    marketCapNum: 1391400,
     marketCap: '₹13,91,400 Cr',
-    marketCapCategory: 'Large',
+    marketCapCategory: 'Mega',
     pe: 29.8,
     pb: 12.4,
     dividendYield: 1.25,
     high52: 4585.90,
     low52: 3313.00,
+    volumeNum: 1900000,
     volume: '1.9M',
     avgVolume: '2.4M',
     volatilityScore: 9,
@@ -161,26 +213,29 @@ export const MARKET_UNIVERSE = [
     sellTarget: '4100',
     stopLoss: '3690',
     riskLevel: 'Low',
-    description: 'Global leader in IT consulting and digital transformation solutions with expansive global Fortune 500 client relationships.',
+    description: 'Global leader in IT consulting and digital transformation solutions with expansive Fortune 500 client relationships.',
     isDelayed: true
   },
   {
-    id: 'hdfc',
+    id: 'hdfcbank',
     symbol: 'HDFCBANK',
     name: 'HDFC Bank Ltd.',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Banking & Financials',
+    sector: 'Banking & Financial Services',
+    industry: 'Private Sector Banking',
     price: 1520.15,
     change: 30.45,
     percentChange: 2.05,
+    marketCapNum: 1154300,
     marketCap: '₹11,54,300 Cr',
-    marketCapCategory: 'Large',
+    marketCapCategory: 'Mega',
     pe: 18.2,
     pb: 2.6,
     dividendYield: 1.12,
     high52: 1794.00,
     low52: 1363.55,
+    volumeNum: 14200000,
     volume: '14.2M',
     avgVolume: '18.0M',
     volatilityScore: 14,
@@ -192,7 +247,7 @@ export const MARKET_UNIVERSE = [
     sellTarget: '1720',
     stopLoss: '1445',
     riskLevel: 'Low',
-    description: 'India’s largest private-sector lender following the flagship mortgage merger, delivering sound credit growth and robust CASA ratios.',
+    description: 'India’s largest private-sector bank following its flagship mortgage merger, delivering high credit quality and deposit mobilization.',
     isDelayed: true
   },
   {
@@ -201,10 +256,12 @@ export const MARKET_UNIVERSE = [
     name: 'Infosys Limited',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Information Technology',
+    sector: 'IT & Technology',
+    industry: 'Enterprise Software & Cloud',
     price: 1420.50,
     change: -25.00,
     percentChange: -1.73,
+    marketCapNum: 590100,
     marketCap: '₹5,90,100 Cr',
     marketCapCategory: 'Large',
     pe: 24.1,
@@ -212,6 +269,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 2.45,
     high52: 1763.00,
     low52: 1358.35,
+    volumeNum: 4800000,
     volume: '4.8M',
     avgVolume: '6.2M',
     volatilityScore: 17,
@@ -223,19 +281,55 @@ export const MARKET_UNIVERSE = [
     sellTarget: '1520',
     stopLoss: '1330',
     riskLevel: 'Medium',
-    description: 'Global digital services and consulting major, pioneering enterprise generative AI suites with Infosys Topaz.',
+    description: 'Digital services and consulting major leading enterprise generative AI initiatives through Infosys Topaz architecture.',
     isDelayed: true
   },
   {
-    id: 'sbi',
+    id: 'icicibank',
+    symbol: 'ICICIBANK',
+    name: 'ICICI Bank Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Banking & Financial Services',
+    industry: 'Commercial Banking',
+    price: 1184.20,
+    change: 18.50,
+    percentChange: 1.59,
+    marketCapNum: 832500,
+    marketCap: '₹8,32,500 Cr',
+    marketCapCategory: 'Large',
+    pe: 17.5,
+    pb: 3.1,
+    dividendYield: 0.85,
+    high52: 1257.00,
+    low52: 898.85,
+    volumeNum: 9800000,
+    volume: '9.8M',
+    avgVolume: '11.5M',
+    volatilityScore: 13,
+    trend: 'Strong Up',
+    rsi: 61.2,
+    recommendation: 'BUY',
+    confidenceScore: 89,
+    buyRange: '1150 - 1175',
+    sellTarget: '1320',
+    stopLoss: '1120',
+    riskLevel: 'Low',
+    description: 'Pioneering private lender distinguished by industry-leading return on equity (ROE > 18%) and consistent asset quality.',
+    isDelayed: true
+  },
+  {
+    id: 'sbin',
     symbol: 'SBIN',
     name: 'State Bank of India',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Banking & Financials',
+    sector: 'Banking & Financial Services',
+    industry: 'Public Sector Banking',
     price: 765.20,
     change: 12.00,
     percentChange: 1.59,
+    marketCapNum: 682900,
     marketCap: '₹6,82,900 Cr',
     marketCapCategory: 'Large',
     pe: 9.8,
@@ -243,6 +337,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 1.62,
     high52: 912.10,
     low52: 555.25,
+    volumeNum: 11800000,
     volume: '11.8M',
     avgVolume: '15.4M',
     volatilityScore: 19,
@@ -254,7 +349,211 @@ export const MARKET_UNIVERSE = [
     sellTarget: '840',
     stopLoss: '725',
     riskLevel: 'Medium',
-    description: 'The nation’s largest public sector financial institution commanding extensive deposit franchises and sovereign-grade infrastructure lending.',
+    description: 'The nation’s largest sovereign financial institution commanding pervasive retail branch reach and core infrastructure credit pipelines.',
+    isDelayed: true
+  },
+  {
+    id: 'bhartiartl',
+    symbol: 'BHARTIARTL',
+    name: 'Bharti Airtel Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Telecommunications',
+    industry: 'Telecom & Cloud Connectivity',
+    price: 1542.40,
+    change: 24.80,
+    percentChange: 1.63,
+    marketCapNum: 924100,
+    marketCap: '₹9,24,100 Cr',
+    marketCapCategory: 'Large',
+    pe: 52.1,
+    pb: 8.4,
+    dividendYield: 0.52,
+    high52: 1690.00,
+    low52: 912.00,
+    volumeNum: 6200000,
+    volume: '6.2M',
+    avgVolume: '7.8M',
+    volatilityScore: 15,
+    trend: 'Strong Upward',
+    rsi: 64.7,
+    recommendation: 'BUY',
+    confidenceScore: 87,
+    buyRange: '1500 - 1530',
+    sellTarget: '1740',
+    stopLoss: '1460',
+    riskLevel: 'Low',
+    description: 'Premier telecommunications provider benefiting from recurring 5G tariff hikes and rapid enterprise cloud networking growth.',
+    isDelayed: true
+  },
+  {
+    id: 'itc',
+    symbol: 'ITC',
+    name: 'ITC Limited',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'FMCG',
+    industry: 'Diversified Consumer Goods',
+    price: 468.30,
+    change: 3.20,
+    percentChange: 0.69,
+    marketCapNum: 585400,
+    marketCap: '₹5,85,400 Cr',
+    marketCapCategory: 'Large',
+    pe: 27.6,
+    pb: 7.9,
+    dividendYield: 3.20,
+    high52: 524.50,
+    low52: 399.30,
+    volumeNum: 8900000,
+    volume: '8.9M',
+    avgVolume: '10.2M',
+    volatilityScore: 8,
+    trend: 'Defensive Value',
+    rsi: 51.3,
+    recommendation: 'BUY',
+    confidenceScore: 82,
+    buyRange: '455 - 465',
+    sellTarget: '520',
+    stopLoss: '440',
+    riskLevel: 'Low',
+    description: 'Cash-flow fortress combining high-margin consumer staples, non-cigarette FMCG brands, and hotel business demerger unlock.',
+    isDelayed: true
+  },
+  {
+    id: 'tatamotors',
+    symbol: 'TATAMOTORS',
+    name: 'Tata Motors Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Automobile & EV',
+    industry: 'Commercial & EV Vehicles',
+    price: 812.60,
+    change: 14.20,
+    percentChange: 1.78,
+    marketCapNum: 298400,
+    marketCap: '₹2,98,400 Cr',
+    marketCapCategory: 'Large',
+    pe: 9.4,
+    pb: 3.2,
+    dividendYield: 0.74,
+    high52: 1179.05,
+    low52: 652.00,
+    volumeNum: 12400000,
+    volume: '12.4M',
+    avgVolume: '14.0M',
+    volatilityScore: 24,
+    trend: 'Cyclical Rebound',
+    rsi: 53.6,
+    recommendation: 'BUY',
+    confidenceScore: 79,
+    buyRange: '790 - 810',
+    sellTarget: '940',
+    stopLoss: '760',
+    riskLevel: 'Medium',
+    description: 'India’s electric passenger car pioneer combined with high-margin Jaguar Land Rover (JLR) luxury SUV cash generation.',
+    isDelayed: true
+  },
+  {
+    id: 'lt',
+    symbol: 'LT',
+    name: 'Larsen & Toubro Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Infrastructure',
+    industry: 'Engineering & Construction',
+    price: 3620.50,
+    change: 48.00,
+    percentChange: 1.34,
+    marketCapNum: 497800,
+    marketCap: '₹4,97,800 Cr',
+    marketCapCategory: 'Large',
+    pe: 34.2,
+    pb: 5.6,
+    dividendYield: 0.88,
+    high52: 3948.60,
+    low52: 2872.00,
+    volumeNum: 2100000,
+    volume: '2.1M',
+    avgVolume: '2.8M',
+    volatilityScore: 16,
+    trend: 'Order Book Expansion',
+    rsi: 59.2,
+    recommendation: 'BUY',
+    confidenceScore: 86,
+    buyRange: '3540 - 3600',
+    sellTarget: '4050',
+    stopLoss: '3440',
+    riskLevel: 'Low',
+    description: 'India’s premier infrastructure contractor boasting an all-time record order book across domestic transport, defence, and Middle-East renewables.',
+    isDelayed: true
+  },
+  {
+    id: 'bel',
+    symbol: 'BEL',
+    name: 'Bharat Electronics Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Defence & Aerospace',
+    industry: 'Defence Radar & Avionics',
+    price: 288.75,
+    change: 8.40,
+    percentChange: 3.00,
+    marketCapNum: 211000,
+    marketCap: '₹2,11,000 Cr',
+    marketCapCategory: 'Mid',
+    pe: 48.2,
+    pb: 11.2,
+    dividendYield: 0.76,
+    high52: 340.50,
+    low52: 133.00,
+    volumeNum: 16800000,
+    volume: '16.8M',
+    avgVolume: '19.2M',
+    volatilityScore: 26,
+    trend: 'Defence Momentum',
+    rsi: 62.4,
+    recommendation: 'BUY',
+    confidenceScore: 88,
+    buyRange: '275 - 285',
+    sellTarget: '345',
+    stopLoss: '260',
+    riskLevel: 'Medium',
+    description: 'Navratna defence electronics PSU developing advanced airborne radar, missile guidance seekers, and electronic warfare systems.',
+    isDelayed: true
+  },
+  {
+    id: 'hal',
+    symbol: 'HAL',
+    name: 'Hindustan Aeronautics Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Defence & Aerospace',
+    industry: 'Military Aircraft & Helicopters',
+    price: 4320.00,
+    change: 112.50,
+    percentChange: 2.67,
+    marketCapNum: 288900,
+    marketCap: '₹2,88,900 Cr',
+    marketCapCategory: 'Large',
+    pe: 38.6,
+    pb: 8.7,
+    dividendYield: 0.81,
+    high52: 5675.00,
+    low52: 2140.00,
+    volumeNum: 2400000,
+    volume: '2.4M',
+    avgVolume: '3.1M',
+    volatilityScore: 27,
+    trend: 'Indigenization Surge',
+    rsi: 65.1,
+    recommendation: 'BUY',
+    confidenceScore: 85,
+    buyRange: '4180 - 4280',
+    sellTarget: '5100',
+    stopLoss: '3990',
+    riskLevel: 'Medium',
+    description: 'Exclusive sovereign manufacturer of Tejas Light Combat Aircraft, combat helicopters, and aircraft engine maintenance for armed forces.',
     isDelayed: true
   },
   {
@@ -263,10 +562,12 @@ export const MARKET_UNIVERSE = [
     name: 'Zomato Ltd. (Eternal)',
     market: 'India',
     exchange: 'NSE',
-    sector: 'Consumer Tech / Quick Commerce',
+    sector: 'Consumer Tech & Platforms',
+    industry: 'Quick Commerce & Food Delivery',
     price: 248.60,
     change: 9.20,
     percentChange: 3.84,
+    marketCapNum: 219400,
     marketCap: '₹2,19,400 Cr',
     marketCapCategory: 'Mid',
     pe: 82.5,
@@ -274,6 +575,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 0.0,
     high52: 298.20,
     low52: 112.50,
+    volumeNum: 28100000,
     volume: '28.1M',
     avgVolume: '32.0M',
     volatilityScore: 29,
@@ -285,9 +587,183 @@ export const MARKET_UNIVERSE = [
     sellTarget: '295',
     stopLoss: '220',
     riskLevel: 'High',
-    description: 'Hyper-growth quick commerce (Blinkit) and online food delivery leader driving rapid operational EBITDA expansion.',
+    description: 'Hyper-growth quick commerce (Blinkit) and food logistics leader driving rapid operational EBITDA margin expansion.',
     isDelayed: true
   },
+  {
+    id: 'sunpharma',
+    symbol: 'SUNPHARMA',
+    name: 'Sun Pharmaceutical Industries',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Pharma & Healthcare',
+    industry: 'Specialty Pharmaceuticals',
+    price: 1812.40,
+    change: 16.80,
+    percentChange: 0.94,
+    marketCapNum: 434900,
+    marketCap: '₹4,34,900 Cr',
+    marketCapCategory: 'Large',
+    pe: 41.2,
+    pb: 6.3,
+    dividendYield: 0.72,
+    high52: 1960.00,
+    low52: 1210.00,
+    volumeNum: 2200000,
+    volume: '2.2M',
+    avgVolume: '2.9M',
+    volatilityScore: 11,
+    trend: 'Steady Uptrend',
+    rsi: 57.3,
+    recommendation: 'BUY',
+    confidenceScore: 83,
+    buyRange: '1760 - 1800',
+    sellTarget: '2050',
+    stopLoss: '1710',
+    riskLevel: 'Low',
+    description: 'India’s top pharmaceutical multinational advancing lucrative proprietary global dermatology and specialty immunology pipelines.',
+    isDelayed: true
+  },
+  {
+    id: 'tatasteel',
+    symbol: 'TATASTEEL',
+    name: 'Tata Steel Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Metals & Mining',
+    industry: 'Integrated Steel Production',
+    price: 146.50,
+    change: -1.80,
+    percentChange: -1.21,
+    marketCapNum: 182900,
+    marketCap: '₹1,82,900 Cr',
+    marketCapCategory: 'Mid',
+    pe: 44.8,
+    pb: 1.8,
+    dividendYield: 2.46,
+    high52: 184.60,
+    low52: 119.50,
+    volumeNum: 34000000,
+    volume: '34.0M',
+    avgVolume: '39.0M',
+    volatilityScore: 23,
+    trend: 'Cyclical Consolidation',
+    rsi: 44.5,
+    recommendation: 'HOLD',
+    confidenceScore: 62,
+    buyRange: '140 - 145',
+    sellTarget: '170',
+    stopLoss: '135',
+    riskLevel: 'Medium',
+    description: 'Global integrated steelmaker transforming European operations to green electric arc furnace technology while expanding Indian capacity.',
+    isDelayed: true
+  },
+  {
+    id: 'bajfinance',
+    symbol: 'BAJFINANCE',
+    name: 'Bajaj Finance Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Banking & Financial Services',
+    industry: 'Non-Banking Financial Co (NBFC)',
+    price: 6780.00,
+    change: 85.00,
+    percentChange: 1.27,
+    marketCapNum: 419200,
+    marketCap: '₹4,19,200 Cr',
+    marketCapCategory: 'Large',
+    pe: 27.8,
+    pb: 5.1,
+    dividendYield: 0.53,
+    high52: 7824.00,
+    low52: 6375.00,
+    volumeNum: 1100000,
+    volume: '1.1M',
+    avgVolume: '1.5M',
+    volatilityScore: 18,
+    trend: 'Credit Expansion',
+    rsi: 52.8,
+    recommendation: 'BUY',
+    confidenceScore: 81,
+    buyRange: '6650 - 6750',
+    sellTarget: '7600',
+    stopLoss: '6450',
+    riskLevel: 'Medium',
+    description: 'Pioneering consumer lending omnichannel platform scaling assets under management across MSME and digital loan products.',
+    isDelayed: true
+  },
+  {
+    id: 'adanient',
+    symbol: 'ADANIENT',
+    name: 'Adani Enterprises Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Infrastructure',
+    industry: 'Airports, Roads & Green Hydrogen',
+    price: 2840.00,
+    change: 42.00,
+    percentChange: 1.50,
+    marketCapNum: 323800,
+    marketCap: '₹3,23,800 Cr',
+    marketCapCategory: 'Large',
+    pe: 95.4,
+    pb: 7.8,
+    dividendYield: 0.05,
+    high52: 3450.00,
+    low52: 2142.00,
+    volumeNum: 2100000,
+    volume: '2.1M',
+    avgVolume: '2.9M',
+    volatilityScore: 34,
+    trend: 'Volatile Expansion',
+    rsi: 53.2,
+    recommendation: 'HOLD',
+    confidenceScore: 66,
+    buyRange: '2720 - 2800',
+    sellTarget: '3250',
+    stopLoss: '2600',
+    riskLevel: 'High',
+    description: 'Flagship incubator driving sovereign-scale airport concessions, expressways, data centers, and renewable energy manufacturing.',
+    isDelayed: true
+  },
+  {
+    id: 'tatapower',
+    symbol: 'TATAPOWER',
+    name: 'Tata Power Co. Ltd.',
+    market: 'India',
+    exchange: 'NSE',
+    sector: 'Renewable Energy',
+    industry: 'Solar, Wind & Transmission',
+    price: 412.50,
+    change: 9.30,
+    percentChange: 2.31,
+    marketCapNum: 131800,
+    marketCap: '₹1,31,800 Cr',
+    marketCapCategory: 'Mid',
+    pe: 33.1,
+    pb: 4.2,
+    dividendYield: 0.48,
+    high52: 494.85,
+    low52: 254.00,
+    volumeNum: 7400000,
+    volume: '7.4M',
+    avgVolume: '9.2M',
+    volatilityScore: 25,
+    trend: 'Green Energy Push',
+    rsi: 61.8,
+    recommendation: 'BUY',
+    confidenceScore: 84,
+    buyRange: '398 - 410',
+    sellTarget: '480',
+    stopLoss: '380',
+    riskLevel: 'Medium',
+    description: 'Leading integrated power utility transitioning generation towards 70% clean renewables and national EV charging infrastructure.',
+    isDelayed: true
+  },
+
+  // ==========================================
+  // GLOBAL EQUITIES (NASDAQ / NYSE)
+  // ==========================================
   {
     id: 'nvda',
     symbol: 'NVDA',
@@ -295,9 +771,11 @@ export const MARKET_UNIVERSE = [
     market: 'US',
     exchange: 'NASDAQ',
     sector: 'Semiconductors & AI',
+    industry: 'AI Acceleration & GPUs',
     price: 138.25,
     change: 4.80,
     percentChange: 3.60,
+    marketCapNum: 3380000,
     marketCap: '$3.38T',
     marketCapCategory: 'Mega',
     pe: 58.4,
@@ -305,6 +783,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 0.03,
     high52: 149.77,
     low52: 45.10,
+    volumeNum: 42800000,
     volume: '42.8M',
     avgVolume: '51.2M',
     volatilityScore: 32,
@@ -325,10 +804,12 @@ export const MARKET_UNIVERSE = [
     name: 'Apple Inc.',
     market: 'US',
     exchange: 'NASDAQ',
-    sector: 'Consumer Electronics',
+    sector: 'IT & Technology',
+    industry: 'Consumer Hardware & Ecosystems',
     price: 228.40,
     change: 1.15,
     percentChange: 0.51,
+    marketCapNum: 3460000,
     marketCap: '$3.46T',
     marketCapCategory: 'Mega',
     pe: 34.2,
@@ -336,6 +817,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 0.44,
     high52: 237.23,
     low52: 164.08,
+    volumeNum: 36500000,
     volume: '36.5M',
     avgVolume: '44.0M',
     volatilityScore: 16,
@@ -356,10 +838,12 @@ export const MARKET_UNIVERSE = [
     name: 'Microsoft Corporation',
     market: 'US',
     exchange: 'NASDAQ',
-    sector: 'Enterprise Software & Cloud',
+    sector: 'IT & Technology',
+    industry: 'Enterprise Software & Cloud',
     price: 418.90,
     change: 3.20,
     percentChange: 0.77,
+    marketCapNum: 3110000,
     marketCap: '$3.11T',
     marketCapCategory: 'Mega',
     pe: 33.9,
@@ -367,6 +851,7 @@ export const MARKET_UNIVERSE = [
     dividendYield: 0.76,
     high52: 468.35,
     low52: 366.50,
+    volumeNum: 16400000,
     volume: '16.4M',
     avgVolume: '21.0M',
     volatilityScore: 15,
@@ -380,45 +865,350 @@ export const MARKET_UNIVERSE = [
     riskLevel: 'Low',
     description: 'Enterprise cloud infrastructure provider (Azure) partnering deeply with OpenAI to monetize Copilot integrations across commercial enterprises.',
     isDelayed: true
+  },
+  {
+    id: 'googl',
+    symbol: 'GOOGL',
+    name: 'Alphabet Inc.',
+    market: 'US',
+    exchange: 'NASDAQ',
+    sector: 'Consumer Tech & Platforms',
+    industry: 'Search, Advertising & Cloud AI',
+    price: 174.50,
+    change: 2.10,
+    percentChange: 1.22,
+    marketCapNum: 2150000,
+    marketCap: '$2.15T',
+    marketCapCategory: 'Mega',
+    pe: 23.4,
+    pb: 6.8,
+    dividendYield: 0.46,
+    high52: 191.75,
+    low52: 129.40,
+    volumeNum: 21200000,
+    volume: '21.2M',
+    avgVolume: '26.0M',
+    volatilityScore: 21,
+    trend: 'Value Accumulation',
+    rsi: 58.4,
+    recommendation: 'BUY',
+    confidenceScore: 86,
+    buyRange: '168 - 172',
+    sellTarget: '198',
+    stopLoss: '162',
+    riskLevel: 'Low',
+    description: 'Global digital advertising and cloud infrastructure leader powering Gemini multimodal generative AI breakthroughs across YouTube and Search.',
+    isDelayed: true
+  },
+  {
+    id: 'amzn',
+    symbol: 'AMZN',
+    name: 'Amazon.com Inc.',
+    market: 'US',
+    exchange: 'NASDAQ',
+    sector: 'Consumer Tech & Platforms',
+    industry: 'E-commerce & Cloud Computing',
+    price: 202.80,
+    change: 3.40,
+    percentChange: 1.71,
+    marketCapNum: 2110000,
+    marketCap: '$2.11T',
+    marketCapCategory: 'Mega',
+    pe: 42.1,
+    pb: 8.5,
+    dividendYield: 0.0,
+    high52: 215.90,
+    low52: 144.05,
+    volumeNum: 31000000,
+    volume: '31.0M',
+    avgVolume: '38.0M',
+    volatilityScore: 22,
+    trend: 'Cloud Growth',
+    rsi: 61.5,
+    recommendation: 'BUY',
+    confidenceScore: 90,
+    buyRange: '195 - 200',
+    sellTarget: '235',
+    stopLoss: '188',
+    riskLevel: 'Low',
+    description: 'Dominant global e-commerce platform and cloud computing market share leader through Amazon Web Services (AWS).',
+    isDelayed: true
+  },
+  {
+    id: 'meta',
+    symbol: 'META',
+    name: 'Meta Platforms Inc.',
+    market: 'US',
+    exchange: 'NASDAQ',
+    sector: 'Consumer Tech & Platforms',
+    industry: 'Social Media & Open-Source AI',
+    price: 562.40,
+    change: 8.20,
+    percentChange: 1.48,
+    marketCapNum: 1420000,
+    marketCap: '$1.42T',
+    marketCapCategory: 'Mega',
+    pe: 28.1,
+    pb: 8.2,
+    dividendYield: 0.36,
+    high52: 602.95,
+    low52: 279.40,
+    volumeNum: 11400000,
+    volume: '11.4M',
+    avgVolume: '14.8M',
+    volatilityScore: 25,
+    trend: 'Strong Efficiency',
+    rsi: 63.9,
+    recommendation: 'BUY',
+    confidenceScore: 92,
+    buyRange: '545 - 558',
+    sellTarget: '630',
+    stopLoss: '530',
+    riskLevel: 'Medium',
+    description: 'Premier social communication suite (Instagram, WhatsApp) pioneering open-source AI frontier models with Llama 3.',
+    isDelayed: true
+  },
+  {
+    id: 'tsla',
+    symbol: 'TSLA',
+    name: 'Tesla Inc.',
+    market: 'US',
+    exchange: 'NASDAQ',
+    sector: 'Automobile & EV',
+    industry: 'Autonomous Vehicles & Clean Energy',
+    price: 342.10,
+    change: 14.80,
+    percentChange: 4.52,
+    marketCapNum: 1090000,
+    marketCap: '$1.09T',
+    marketCapCategory: 'Mega',
+    pe: 112.5,
+    pb: 14.2,
+    dividendYield: 0.0,
+    high52: 360.00,
+    low52: 138.80,
+    volumeNum: 78000000,
+    volume: '78.0M',
+    avgVolume: '92.0M',
+    volatilityScore: 42,
+    trend: 'Autonomous Momentum',
+    rsi: 71.2,
+    recommendation: 'HOLD',
+    confidenceScore: 74,
+    buyRange: '315 - 330',
+    sellTarget: '390',
+    stopLoss: '295',
+    riskLevel: 'High',
+    description: 'Electric mobility and stationary energy storage leader commercializing Full Self-Driving (FSD) vision AI and humanoid robotics.',
+    isDelayed: true
+  },
+  {
+    id: 'amd',
+    symbol: 'AMD',
+    name: 'Advanced Micro Devices',
+    market: 'US',
+    exchange: 'NASDAQ',
+    sector: 'Semiconductors & AI',
+    industry: 'Datacenter CPUs & AI Instinct GPUs',
+    price: 136.80,
+    change: 3.10,
+    percentChange: 2.32,
+    marketCapNum: 221000,
+    marketCap: '$221B',
+    marketCapCategory: 'Large',
+    pe: 108.0,
+    pb: 3.9,
+    dividendYield: 0.0,
+    high52: 227.30,
+    low52: 116.04,
+    volumeNum: 38000000,
+    volume: '38.0M',
+    avgVolume: '46.0M',
+    volatilityScore: 36,
+    trend: 'MI300 AI Expansion',
+    rsi: 54.8,
+    recommendation: 'BUY',
+    confidenceScore: 82,
+    buyRange: '130 - 135',
+    sellTarget: '165',
+    stopLoss: '122',
+    riskLevel: 'Medium',
+    description: 'High-performance computing innovator gaining hyperscaler market share with EPYC server CPUs and Instinct MI300X AI accelerators.',
+    isDelayed: true
+  },
+  {
+    id: 'jpm',
+    symbol: 'JPM',
+    name: 'JPMorgan Chase & Co.',
+    market: 'US',
+    exchange: 'NYSE',
+    sector: 'Banking & Financial Services',
+    industry: 'Global Investment & Retail Banking',
+    price: 242.60,
+    change: 2.40,
+    percentChange: 1.00,
+    marketCapNum: 688000,
+    marketCap: '$688B',
+    marketCapCategory: 'Large',
+    pe: 13.2,
+    pb: 2.0,
+    dividendYield: 1.98,
+    high52: 249.20,
+    low52: 149.50,
+    volumeNum: 8200000,
+    volume: '8.2M',
+    avgVolume: '10.5M',
+    volatilityScore: 12,
+    trend: 'Dominant Banking Scale',
+    rsi: 62.1,
+    recommendation: 'BUY',
+    confidenceScore: 88,
+    buyRange: '235 - 240',
+    sellTarget: '270',
+    stopLoss: '226',
+    riskLevel: 'Low',
+    description: 'America’s largest financial institution boasting peerless balance sheet fortitude and global capital markets leadership.',
+    isDelayed: true
+  },
+  {
+    id: 'wmt',
+    symbol: 'WMT',
+    name: 'Walmart Inc.',
+    market: 'US',
+    exchange: 'NYSE',
+    sector: 'FMCG',
+    industry: 'Omnichannel Retail & Logistics',
+    price: 88.20,
+    change: 0.65,
+    percentChange: 0.74,
+    marketCapNum: 708000,
+    marketCap: '$708B',
+    marketCapCategory: 'Large',
+    pe: 38.4,
+    pb: 7.8,
+    dividendYield: 0.94,
+    high52: 90.50,
+    low52: 50.10,
+    volumeNum: 14500000,
+    volume: '14.5M',
+    avgVolume: '18.0M',
+    volatilityScore: 10,
+    trend: 'All-Time Highs',
+    rsi: 66.4,
+    recommendation: 'BUY',
+    confidenceScore: 85,
+    buyRange: '84 - 87',
+    sellTarget: '98',
+    stopLoss: '81',
+    riskLevel: 'Low',
+    description: 'World’s largest retailer expanding digital marketplace throughput, automation, and advertising revenue streams.',
+    isDelayed: true
   }
 ];
 
-// Helper to generate dynamic multi-point historical chart series
+// Helper to generate dynamic multi-point historical chart series with real OHLC data
 export const generateHistoryData = (basePrice, timeframe = '1M', volatility = 0.015) => {
   const pointsMap = {
     '1D': { count: 24, labelFormat: (i) => `${9 + Math.floor(i / 4)}:${(i % 4) * 15 || '00'}` },
     '1W': { count: 7, labelFormat: (i) => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i] },
     '1M': { count: 30, labelFormat: (i) => `Day ${i + 1}` },
-    '1Y': { count: 12, labelFormat: (i) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i] }
+    '3M': { count: 45, labelFormat: (i) => `W${Math.floor(i / 3) + 1}` },
+    '6M': { count: 26, labelFormat: (i) => `W${i + 1}` },
+    '1Y': { count: 12, labelFormat: (i) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i] },
+    '5Y': { count: 20, labelFormat: (i) => `Q${(i % 4) + 1} '${20 + Math.floor(i / 4)}` },
+    'ALL': { count: 30, labelFormat: (i) => `'${15 + Math.floor(i / 2)}` }
   };
 
   const config = pointsMap[timeframe] || pointsMap['1M'];
   const data = [];
-  let current = basePrice * (1 - volatility * 2);
+  let currentClose = basePrice * (1 - volatility * (config.count * 0.15));
 
   for (let i = 0; i < config.count; i++) {
-    const randomShift = (Math.random() - 0.48) * volatility * current;
-    current = Math.max(current + randomShift, basePrice * 0.7);
-    if (i === config.count - 1) current = basePrice; // match current price at the end
+    const isBull = Math.random() > 0.46;
+    const shift = (Math.random() - (isBull ? 0.35 : 0.65)) * volatility * currentClose;
+    const open = currentClose;
+    const close = Math.max(open + shift, basePrice * 0.65);
+    const high = Math.max(open, close) + Math.random() * volatility * currentClose * 0.7;
+    const low = Math.min(open, close) - Math.random() * volatility * currentClose * 0.7;
+    
+    currentClose = close;
+    if (i === config.count - 1) currentClose = basePrice;
+
     data.push({
       date: config.labelFormat(i),
-      price: parseFloat(current.toFixed(2)),
-      volume: Math.floor(Math.random() * 500000 + 100000)
+      price: parseFloat(currentClose.toFixed(2)),
+      open: parseFloat(open.toFixed(2)),
+      high: parseFloat(high.toFixed(2)),
+      low: parseFloat(low.toFixed(2)),
+      close: parseFloat(currentClose.toFixed(2)),
+      volume: Math.floor(Math.random() * 5000000 + 500000),
+      sma20: parseFloat((currentClose * (1 + (Math.sin(i) * 0.01))).toFixed(2)),
+      ema50: parseFloat((currentClose * (1 - (Math.cos(i) * 0.015))).toFixed(2))
     });
   }
   return data;
 };
 
-// Unified market data provider interface
+// Autocomplete and Advanced Filtering Helper
 export const MarketDataProvider = {
-  getIndices: async () => {
-    // Returns indices with real values and delay tags
-    return BENCHMARK_INDICES;
+  getIndices: async () => BENCHMARK_INDICES,
+
+  getAllStocks: async (filters = {}) => {
+    let result = [...MARKET_UNIVERSE];
+
+    if (filters.market && filters.market !== 'All') {
+      result = result.filter((s) => s.market.toLowerCase() === filters.market.toLowerCase());
+    }
+    if (filters.exchange && filters.exchange !== 'All') {
+      result = result.filter((s) => s.exchange.toLowerCase() === filters.exchange.toLowerCase());
+    }
+    if (filters.sector && filters.sector !== 'All') {
+      result = result.filter((s) => s.sector.toLowerCase() === filters.sector.toLowerCase());
+    }
+    if (filters.cap && filters.cap !== 'All') {
+      result = result.filter((s) => s.marketCapCategory.toLowerCase() === filters.cap.toLowerCase());
+    }
+
+    if (filters.sortBy) {
+      switch (filters.sortBy) {
+        case 'price_desc':
+          result.sort((a, b) => b.price - a.price);
+          break;
+        case 'price_asc':
+          result.sort((a, b) => a.price - b.price);
+          break;
+        case 'change_desc':
+          result.sort((a, b) => b.percentChange - a.percentChange);
+          break;
+        case 'change_asc':
+          result.sort((a, b) => a.percentChange - b.percentChange);
+          break;
+        case 'cap_desc':
+          result.sort((a, b) => b.marketCapNum - a.marketCapNum);
+          break;
+        case 'volume_desc':
+          result.sort((a, b) => b.volumeNum - a.volumeNum);
+          break;
+        case 'score_desc':
+          result.sort((a, b) => b.confidenceScore - a.confidenceScore);
+          break;
+        default:
+          break;
+      }
+    }
+
+    return result;
   },
 
-  getAllStocks: async (marketFilter = 'All') => {
-    if (marketFilter === 'All') return MARKET_UNIVERSE;
-    return MARKET_UNIVERSE.filter((s) => s.market.toLowerCase() === marketFilter.toLowerCase());
+  searchAutocomplete: async (term, limit = 8) => {
+    if (!term || !term.trim()) return [];
+    const q = term.toLowerCase().trim();
+    return MARKET_UNIVERSE.filter(
+      (s) =>
+        s.symbol.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q) ||
+        s.sector.toLowerCase().includes(q)
+    ).slice(0, limit);
   },
 
   getStockById: async (idOrSymbol) => {
@@ -427,7 +1217,7 @@ export const MarketDataProvider = {
       (s) => s.id.toLowerCase() === query || s.symbol.toLowerCase() === query
     );
     if (found) return found;
-    // Return graceful fallback stock representation
+
     return {
       id: query,
       symbol: query.toUpperCase(),
@@ -435,9 +1225,11 @@ export const MarketDataProvider = {
       market: 'India',
       exchange: 'NSE',
       sector: 'General Market',
+      industry: 'Public Equities',
       price: 1000.00,
       change: 0.0,
       percentChange: 0.0,
+      marketCapNum: 10000,
       marketCap: '₹10,000 Cr',
       marketCapCategory: 'Mid',
       pe: 20.0,
@@ -445,6 +1237,7 @@ export const MarketDataProvider = {
       dividendYield: 1.0,
       high52: 1200.00,
       low52: 800.00,
+      volumeNum: 1000000,
       volume: '1.0M',
       avgVolume: '1.2M',
       volatilityScore: 15,
@@ -459,16 +1252,5 @@ export const MarketDataProvider = {
       description: 'Asset profile information is synchronized with market exchange registries.',
       isDelayed: true
     };
-  },
-
-  searchStocks: async (term) => {
-    if (!term || !term.trim()) return MARKET_UNIVERSE;
-    const q = term.toLowerCase().trim();
-    return MARKET_UNIVERSE.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.symbol.toLowerCase().includes(q) ||
-        s.sector.toLowerCase().includes(q)
-    );
   }
 };

@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, ShieldCheck, Bell, Database, ExternalLink, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { 
+  Settings as SettingsIcon, 
+  ShieldCheck, 
+  Bell, 
+  Database, 
+  ExternalLink, 
+  AlertCircle, 
+  CheckCircle2, 
+  Sun, 
+  Moon, 
+  Palette 
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { DigiLockerService } from '../services/digilockerService';
 
 const Settings = () => {
   const { user, updatePreferences } = useAuth();
+  const { theme, setTheme, isDark } = useTheme();
   const [defaultMarket, setDefaultMarket] = useState(user.preferences?.defaultMarket || 'India');
   const [autoRefresh, setAutoRefresh] = useState(user.preferences?.autoRefreshSec || 30);
   const digiLockerConfig = DigiLockerService.getConfig();
 
   const handleSave = () => {
-    updatePreferences({ defaultMarket, autoRefreshSec: Number(autoRefresh) });
-    alert('Settings saved successfully!');
+    updatePreferences({ defaultMarket, autoRefreshSec: Number(autoRefresh), theme });
+    alert('Settings and theme saved successfully!');
   };
 
   const handleDigiLockerConnect = () => {
@@ -31,8 +44,62 @@ const Settings = () => {
           System Preferences & Integrations
         </h1>
         <p className="text-xs sm:text-sm text-[#8E9CAE] mt-1">
-          Customize market defaults, API keys, and enterprise identity verifications.
+          Customize market defaults, visual themes, API configurations, and enterprise identity verifications.
         </p>
+      </div>
+
+      {/* Visual Theme Settings */}
+      <div className="glass-card bg-[#162338]/85 p-6 rounded-3xl flex flex-col gap-5">
+        <h3 className="text-base font-bold text-white flex items-center gap-2">
+          <Palette size={18} className="text-[#54D6B0]" />
+          Visual Theme Experience
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => setTheme('dark')}
+            className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+              isDark
+                ? 'bg-[#101B2B] border-[#54D6B0] shadow-md shadow-[#54D6B0]/20'
+                : 'bg-[#101B2B]/60 border-white/5 text-[#8E9CAE]'
+            }`}
+          >
+            <div className="p-2 rounded-xl bg-white/5 text-[#54D6B0] mt-0.5">
+              <Moon size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Dark Mode (Default)</span>
+                {isDark && <CheckCircle2 size={14} className="text-[#54D6B0]" />}
+              </div>
+              <p className="text-xs text-[#8E9CAE] mt-1 leading-relaxed">
+                Deep navy `#101B2B` background with mint green accents, optimized for institutional terminal focus.
+              </p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setTheme('light')}
+            className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+              !isDark
+                ? 'bg-white border-[#10B981] shadow-md'
+                : 'bg-[#101B2B]/60 border-white/5 text-[#8E9CAE]'
+            }`}
+          >
+            <div className="p-2 rounded-xl bg-[#F1F5F9] text-[#10B981] mt-0.5">
+              <Sun size={18} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">Light Mode</span>
+                {!isDark && <CheckCircle2 size={14} className="text-[#10B981]" />}
+              </div>
+              <p className="text-xs text-[#8E9CAE] mt-1 leading-relaxed">
+                Clean cloud-white `#F3F5F7` cards, high-contrast typography, and accessible green tones.
+              </p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Market Preferences */}
