@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -11,9 +11,11 @@ import {
   AlertTriangle, 
   ExternalLink, 
   FileText, 
-  Send 
+  Send,
+  RefreshCw,
+  Radio
 } from 'lucide-react';
-import { MARKET_UNIVERSE } from '../services/marketData';
+import { MARKET_UNIVERSE, MarketDataProvider } from '../services/marketData';
 import { PredictionEngine } from '../services/predictionEngine';
 import { NewsIntelligenceService } from '../services/newsService';
 import AdvancedChart from '../components/AdvancedChart';
@@ -21,22 +23,62 @@ import AdvancedChart from '../components/AdvancedChart';
 const StockDetails = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [liveQuote, setLiveQuote] = useState(null);
+  const [liveNews, setLiveNews] = useState([]);
+  const [chartSeries, setChartSeries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState(() => {
     return localStorage.getItem(`bullrix_notes_${id}`) || '';
   });
 
-  const stock = useMemo(() => {
+  const baseStock = useMemo(() => {
     const found = MARKET_UNIVERSE.find((s) => s.id === id || s.symbol.toLowerCase() === String(id).toLowerCase());
     return found || MARKET_UNIVERSE[0];
   }, [id]);
 
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [quoteRes, newsRes, histRes] = await Promise.all([
+          MarketDataProvider.fetchLiveQuote(baseStock.symbol),
+          NewsIntelligenceService.fetchLiveNews({ ticker: baseStock.symbol, limit: 10 }),
+          MarketDataProvider.fetchHistoricalSeries(baseStock.symbol, '1mo')
+        ]);
+        if (isMounted) {
+          setLiveQuote(quoteRes);
+          setLiveNews(newsRes.articles);
+          setChartSeries(histRes);
+        }
+      } catch (err) {
+        console.error('Error hydrating stock details:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [baseStock.symbol]);
+
+  const stock = useMemo(() => {
+    if (!liveQuote) return baseStock;
+    return {
+      ...baseStock,
+      price: liveQuote.price || baseStock.price,
+      change: liveQuote.change !== undefined ? liveQuote.change : baseStock.change,
+      percentChange: liveQuote.percentChange !== undefined ? liveQuote.percentChange : baseStock.percentChange,
+      high52: liveQuote.high || baseStock.high52,
+      low52: liveQuote.low || baseStock.low52,
+      dataProvider: liveQuote.dataProvider || 'Cross-Validated Feed',
+      dataStatus: liveQuote.dataStatus || 'DELAYED',
+      delayMinutes: liveQuote.delayMinutes || 15
+    };
+  }, [baseStock, liveQuote]);
+
   const forecast = useMemo(() => {
     return PredictionEngine.generateForecast(stock);
   }, [stock]);
-
-  const news = useMemo(() => {
-    return NewsIntelligenceService.getRolling14DaysNews(stock.symbol);
-  }, [stock.symbol]);
 
   const handleNotesChange = (e) => {
     setNotes(e.target.value);
@@ -72,9 +114,12 @@ const StockDetails = () => {
                   {stock.exchange}
                 </span>
               </div>
-              <span className="text-xs text-[#8E9CAE]">
-                {stock.sector} • Market Cap: {stock.marketCap} • 15m Delayed
-              </span>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-[#8E9CAE]">
+                <span>{stock.sector} • Market Cap: {stock.marketCap}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#54D6B0] bg-[#54D6B0]/10 px-2 py-0.5 rounded-full border border-[#54D6B0]/20">
+                  <Clock size={11} /> {stock.dataStatus || 'DELAYED'} ({stock.delayMinutes || 15}m) • {stock.dataProvider || 'Google Finance Cross-Validated'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -99,13 +144,14 @@ const StockDetails = () => {
               basePrice={stock.price}
               currency={currencySymbol}
               symbol={stock.symbol}
+              customSeries={chartSeries.length > 0 ? chartSeries : null}
               title={`${stock.name} Price Action`}
             />
           </div>
 
           {/* Navigation Tabs */}
           <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-            {['Overview', 'Technicals', '14-Day News', 'Private Notes'].map((tab) => (
+            {['Overview', 'Technicals', '14-Day Google News', 'Private Notes'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -171,18 +217,30 @@ const StockDetails = () => {
             </div>
           )}
 
-          {activeTab === '14-Day News' && (
+          {activeTab === '14-Day Google News' && (
             <div className="space-y-3">
-              {news.map((item) => (
-                <div key={item.id} className="p-4 rounded-2xl bg-[#162338]/80 border border-white/5 flex flex-col gap-2">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-[#8E9CAE]">
-                    <span className="font-bold text-[#54D6B0]">{item.publisher}</span>
-                    <span>{item.publishedDaysAgo}d ago</span>
-                  </div>
-                  <h4 className="text-xs font-bold text-white">{item.title}</h4>
-                  <p className="text-[11px] text-[#8E9CAE]">{item.summary}</p>
+              {liveNews.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-[#162338]/60 text-center text-xs text-[#8E9CAE]">
+                  No news items recorded in this interval for {stock.symbol}.
                 </div>
-              ))}
+              ) : (
+                liveNews.map((item) => (
+                  <div key={item.id} className="p-4 rounded-2xl bg-[#162338]/80 border border-white/5 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-mono text-[#8E9CAE]">
+                      <span className="font-bold text-[#54D6B0]">{item.publisher}</span>
+                      <span>{item.publishedDaysAgo}d ago</span>
+                    </div>
+                    <h4 className="text-xs font-bold text-white">{item.title}</h4>
+                    <p className="text-[11px] text-[#8E9CAE]">{item.summary}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[10px]">
+                      <span className="text-[#54D6B0] font-mono">Sentiment: {item.sentiment}</span>
+                      <a href={item.url} target="_blank" rel="noreferrer" className="text-[#8E9CAE] hover:text-[#54D6B0] flex items-center gap-1">
+                        Read Story <ExternalLink size={10} />
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
 

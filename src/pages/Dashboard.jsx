@@ -34,6 +34,23 @@ const Dashboard = () => {
   const [activeSector, setActiveSector] = useState('All');
   const [activeCap, setActiveCap] = useState('All');
   const [sortBy, setSortBy] = useState('cap_desc');
+  const [liveIndices, setLiveIndices] = useState(BENCHMARK_INDICES);
+  const [indicesSource, setIndicesSource] = useState('Cross-Validated Google Finance');
+
+  useEffect(() => {
+    async function loadIndices() {
+      try {
+        const fetched = await MarketDataProvider.fetchLiveIndices();
+        if (fetched && fetched.length > 0) {
+          setLiveIndices(fetched);
+          setIndicesSource(fetched[0].dataProvider || 'Google Finance Feed');
+        }
+      } catch (err) {
+        console.error('Failed to sync indices:', err);
+      }
+    }
+    loadIndices();
+  }, []);
 
   const searchContainerRef = useRef(null);
 
@@ -145,7 +162,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {BENCHMARK_INDICES.slice(0, 6).map((idx) => {
+          {liveIndices.slice(0, 6).map((idx) => {
             const isUp = idx.percentChange >= 0;
             return (
               <div

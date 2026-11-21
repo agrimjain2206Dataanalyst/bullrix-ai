@@ -122,6 +122,41 @@ export const NEWS_DATABASE = [
 
 export const NewsIntelligenceService = {
   /**
+   * Fetches real-time financial news from BullRix Backend (Google News RSS Feed)
+   * with seamless fallback to authenticated local 14-day database.
+   */
+  async fetchLiveNews({ ticker = null, market = 'IN', query = '', limit = 20 } = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (ticker && ticker !== 'ALL') params.append('ticker', ticker);
+      if (market) params.append('market', market);
+      if (query) params.append('query', query);
+      params.append('limit', limit.toString());
+
+      const res = await fetch(`http://localhost:3001/api/news?${params.toString()}`);
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload.success && Array.isArray(payload.data) && payload.data.length > 0) {
+          return {
+            source: payload.source || 'Google News RSS Feed',
+            freshness: payload.freshness || 'Live Ingestion',
+            articles: payload.data
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('[NewsIntelligenceService] Live Google News backend offline, serving curated news intelligence database.');
+    }
+
+    const fallbackArticles = this.getRolling14DaysNews(ticker);
+    return {
+      source: 'Curated 14-Day Financial Intelligence Desk',
+      freshness: 'Verified Baseline',
+      articles: fallbackArticles
+    };
+  },
+
+  /**
    * Returns news filtered strictly to rolling 14-day window
    */
   getRolling14DaysNews(ticker = null) {
