@@ -1,256 +1,310 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, ArrowUpRight, ArrowDownRight, Zap, Target, 
-  ShieldCheck, AlertTriangle, TrendingUp, Info, Bookmark, 
-  MessageSquare, FileText, Share2, Plus
+  ArrowLeft, 
+  Bookmark, 
+  Sparkles, 
+  TrendingUp, 
+  Clock, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ExternalLink, 
+  FileText, 
+  Send,
+  RefreshCw,
+  Radio
 } from 'lucide-react';
-import stocks from '../data/stocks.json';
+import { MARKET_UNIVERSE, MarketDataProvider } from '../services/marketData';
+import { PredictionEngine } from '../services/predictionEngine';
+import { NewsIntelligenceService } from '../services/newsService';
 import AdvancedChart from '../components/AdvancedChart';
 
 const StockDetails = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [notes, setNotes] = useState("");
-  const stock = stocks.find(s => s.id === id);
+  const [liveQuote, setLiveQuote] = useState(null);
+  const [liveNews, setLiveNews] = useState([]);
+  const [chartSeries, setChartSeries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState(() => {
+    return localStorage.getItem(`bullrix_notes_${id}`) || '';
+  });
 
-  useEffect(() => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    setIsBookmarked(bookmarks.includes(id));
-    const savedNotes = localStorage.getItem(`notes_${id}`) || "";
-    setNotes(savedNotes);
+  const baseStock = useMemo(() => {
+    const found = MARKET_UNIVERSE.find((s) => s.id === id || s.symbol.toLowerCase() === String(id).toLowerCase());
+    return found || MARKET_UNIVERSE[0];
   }, [id]);
 
-  const toggleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    let newBookmarks = bookmarks.includes(id) ? bookmarks.filter(b => b !== id) : [...bookmarks, id];
-    localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
-    setIsBookmarked(!isBookmarked);
-  };
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [quoteRes, newsRes, histRes] = await Promise.all([
+          MarketDataProvider.fetchLiveQuote(baseStock.symbol),
+          NewsIntelligenceService.fetchLiveNews({ ticker: baseStock.symbol, limit: 10 }),
+          MarketDataProvider.fetchHistoricalSeries(baseStock.symbol, '1mo')
+        ]);
+        if (isMounted) {
+          setLiveQuote(quoteRes);
+          setLiveNews(newsRes.articles);
+          setChartSeries(histRes);
+        }
+      } catch (err) {
+        console.error('Error hydrating stock details:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [baseStock.symbol]);
 
-  const handleNoteChange = (e) => {
+  const stock = useMemo(() => {
+    if (!liveQuote) return baseStock;
+    return {
+      ...baseStock,
+      price: liveQuote.price || baseStock.price,
+      change: liveQuote.change !== undefined ? liveQuote.change : baseStock.change,
+      percentChange: liveQuote.percentChange !== undefined ? liveQuote.percentChange : baseStock.percentChange,
+      high52: liveQuote.high || baseStock.high52,
+      low52: liveQuote.low || baseStock.low52,
+      dataProvider: liveQuote.dataProvider || 'Cross-Validated Feed',
+      dataStatus: liveQuote.dataStatus || 'DELAYED',
+      delayMinutes: liveQuote.delayMinutes || 15
+    };
+  }, [baseStock, liveQuote]);
+
+  const forecast = useMemo(() => {
+    return PredictionEngine.generateForecast(stock);
+  }, [stock]);
+
+  const handleNotesChange = (e) => {
     setNotes(e.target.value);
-    localStorage.setItem(`notes_${id}`, e.target.value);
+    localStorage.setItem(`bullrix_notes_${stock.id}`, e.target.value);
   };
-
-  if (!stock) return <div className="pt-32 text-center">Stock not found</div>;
 
   const isPositive = stock.percentChange >= 0;
+  const currencySymbol = stock.market === 'US' ? '$' : '₹';
 
   return (
-    <div className="pt-28 pb-12 px-8 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="w-12 h-12 glass rounded-2xl flex items-center justify-center hover:bg-white/5 transition-all">
-            <ArrowLeft size={24} />
-          </Link>
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-black">{stock.name}</h1>
-              <span className="text-muted text-lg font-medium">{stock.symbol}</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest ${stock.marketCapCategory === 'Large' ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted'}`}>
-                {stock.marketCapCategory} Cap
-              </span>
+    <div className="pt-28 pb-16 px-4 lg:px-8 max-w-[1600px] mx-auto flex flex-col gap-8">
+      {/* Back button & Stock Header */}
+      <div className="flex flex-col gap-4">
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8E9CAE] hover:text-[#54D6B0] transition-colors w-fit"
+        >
+          <ArrowLeft size={16} /> Back to Dashboard
+        </Link>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-[#54D6B0]/15 border border-[#54D6B0]/30 flex items-center justify-center text-xl font-bold font-mono text-[#54D6B0]">
+              {stock.symbol.slice(0, 3)}
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted">
-              <span>Sector: <span className="text-white font-medium">{stock.sector}</span></span>
-              <span>•</span>
-              <span>NSE: <span className="text-white font-medium">EQ</span></span>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{stock.name}</h1>
+                <span className="text-xs font-mono font-bold bg-[#54D6B0]/15 text-[#54D6B0] px-2 py-0.5 rounded">
+                  {stock.symbol}
+                </span>
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-[#8E9CAE]">
+                  {stock.exchange}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-[#8E9CAE]">
+                <span>{stock.sector} • Market Cap: {stock.marketCap}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-mono text-[#54D6B0] bg-[#54D6B0]/10 px-2 py-0.5 rounded-full border border-[#54D6B0]/20">
+                  <Clock size={11} /> {stock.dataStatus || 'DELAYED'} ({stock.delayMinutes || 15}m) • {stock.dataProvider || 'Google Finance Cross-Validated'}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleBookmark}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${isBookmarked ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
-          >
-            <Bookmark size={18} fill={isBookmarked ? "currentColor" : "none"} />
-            {isBookmarked ? 'Bookmarked' : 'Add to Watchlist'}
-          </button>
-          <button className="w-12 h-12 glass rounded-2xl flex items-center justify-center hover:bg-white/5">
-            <Share2 size={20} />
-          </button>
+          <div className="text-left md:text-right">
+            <span className="text-3xl sm:text-4xl font-black font-mono text-white block">
+              {currencySymbol}{stock.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+            <div className={`flex items-center md:justify-end gap-1 text-sm font-bold mt-1 ${isPositive ? 'text-[#54D6B0]' : 'text-[#FF5C75]'}`}>
+              <span>{isPositive ? '+' : ''}{stock.percentChange.toFixed(2)}%</span>
+              <span className="text-xs text-[#8E9CAE]">({stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)})</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Main Content Area (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-8">
-          
-          {/* Price Summary Card */}
-          <div className="glass-card flex flex-wrap justify-between items-center gap-8">
-            <div className="flex flex-col">
-              <span className="text-muted text-xs font-bold uppercase tracking-widest mb-1">Current Price</span>
-              <div className="flex items-end gap-3">
-                <h2 className="text-5xl font-black tracking-tighter">₹{stock.price.toLocaleString('en-IN')}</h2>
-                <div className={`flex items-center gap-1 font-bold text-lg mb-1 ${isPositive ? 'text-success' : 'text-accent'}`}>
-                  {isPositive ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
-                  {Math.abs(stock.percentChange)}%
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 flex-1">
-              {[
-                { label: 'Open', value: `₹${stock.ohlc?.open || '-'}` },
-                { label: 'High', value: `₹${stock.ohlc?.high || '-'}` },
-                { label: 'Low', value: `₹${stock.ohlc?.low || '-'}` },
-                { label: 'Confidence', value: `${stock.confidenceScore}%`, color: 'text-primary' },
-              ].map((item, i) => (
-                <div key={i} className="flex flex-col">
-                  <span className="text-muted text-[10px] font-bold uppercase tracking-widest mb-1">{item.label}</span>
-                  <span className={`text-lg font-bold ${item.color || ''}`}>{item.value}</span>
-                </div>
-              ))}
-            </div>
+      {/* Main Interactive Chart & Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Interactive Chart + Navigation Tabs (2 Cols) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="glass-card bg-[#162338]/90 p-6 rounded-3xl border border-white/5">
+            <AdvancedChart
+              basePrice={stock.price}
+              currency={currencySymbol}
+              symbol={stock.symbol}
+              customSeries={chartSeries.length > 0 ? chartSeries : null}
+              title={`${stock.name} Price Action`}
+            />
           </div>
 
-          {/* Chart Section */}
-          <div className="glass-card min-h-[500px]">
-            <AdvancedChart data={stock.history} color={isPositive ? '#10b981' : '#f43f5e'} type="area" />
-          </div>
-
-          {/* Tabs Section */}
-          <div className="flex border-b border-white/5 gap-8">
-            {['Overview', 'Analysis', 'News', 'Peers'].map(tab => (
-              <button 
+          {/* Navigation Tabs */}
+          <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+            {['Overview', 'Technicals', '14-Day Google News', 'Private Notes'].map((tab) => (
+              <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-4 text-sm font-bold transition-all relative ${activeTab === tab ? 'text-primary' : 'text-muted hover:text-white'}`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === tab
+                    ? 'bg-[#54D6B0] text-[#0B131E]'
+                    : 'text-[#8E9CAE] hover:text-white'
+                }`}
               >
                 {tab}
-                {activeTab === tab && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
               </button>
             ))}
           </div>
 
           {/* Tab Content */}
-          <div className="min-h-[300px]">
-             {activeTab === 'Overview' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-bold">About {stock.name}</h3>
-                    <p className="text-muted leading-relaxed">
-                      {stock.description}
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="p-4 glass rounded-2xl">
-                          <span className="text-[10px] font-bold text-muted uppercase">Volatility</span>
-                          <p className="text-lg font-bold">{stock.volatilityScore > 20 ? 'High' : 'Moderate'}</p>
-                       </div>
-                       <div className="p-4 glass rounded-2xl">
-                          <span className="text-[10px] font-bold text-muted uppercase">Risk Level</span>
-                          <p className={`text-lg font-bold ${stock.riskLevel === 'Low' ? 'text-success' : 'text-accent'}`}>{stock.riskLevel}</p>
-                       </div>
-                    </div>
-                  </div>
-                  <div className="glass-card !bg-primary/5 border border-primary/20">
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                       <ShieldCheck className="text-primary" /> Pros & Cons
-                    </h3>
-                    <div className="space-y-4">
-                       <div className="flex gap-3">
-                          <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-1">
-                             <Plus size={12} className="text-success" />
-                          </div>
-                          <p className="text-sm">Strong technical trend with low volume-weighted volatility.</p>
-                       </div>
-                       <div className="flex gap-3">
-                          <div className="w-5 h-5 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0 mt-1">
-                             <Plus size={12} className="text-success" />
-                          </div>
-                          <p className="text-sm">Institutional accumulation detected in recent sessions.</p>
-                       </div>
-                       <div className="flex gap-3">
-                          <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-1">
-                             <AlertTriangle size={12} className="text-accent" />
-                          </div>
-                          <p className="text-sm">Global macro headwinds might affect short-term margins.</p>
-                       </div>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-                       <span className="text-sm font-bold">BullRix Recommendation:</span>
-                       <span className="px-3 py-1 bg-primary text-white rounded-lg font-bold">{stock.recommendation}</span>
-                    </div>
-                  </div>
-               </div>
-             )}
+          {activeTab === 'Overview' && (
+            <div className="glass-card bg-[#162338]/70 p-6 flex flex-col gap-4">
+              <h3 className="text-base font-bold text-white">Company Profile & Operations</h3>
+              <p className="text-xs text-[#8E9CAE] leading-relaxed">{stock.description}</p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                <div className="p-3 bg-[#101B2B] rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[#8E9CAE] uppercase block font-mono">52W High</span>
+                  <span className="text-sm font-bold font-mono text-white mt-0.5 block">{currencySymbol}{stock.high52}</span>
+                </div>
+                <div className="p-3 bg-[#101B2B] rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[#8E9CAE] uppercase block font-mono">52W Low</span>
+                  <span className="text-sm font-bold font-mono text-white mt-0.5 block">{currencySymbol}{stock.low52}</span>
+                </div>
+                <div className="p-3 bg-[#101B2B] rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[#8E9CAE] uppercase block font-mono">P/E Ratio</span>
+                  <span className="text-sm font-bold font-mono text-[#54D6B0] mt-0.5 block">{stock.pe}</span>
+                </div>
+                <div className="p-3 bg-[#101B2B] rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[#8E9CAE] uppercase block font-mono">RSI Momentum</span>
+                  <span className="text-sm font-bold font-mono text-white mt-0.5 block">{stock.rsi}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
-             {activeTab === 'News' && (
-               <div className="space-y-4">
-                  {stock.news?.map((item, i) => (
-                    <div key={i} className="glass p-6 rounded-3xl border border-white/5 hover:border-white/20 transition-all cursor-pointer group">
-                       <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs font-bold text-primary">{item.source} • {item.date}</span>
-                       </div>
-                       <h4 className="text-lg font-bold mb-2 group-hover:text-primary transition-colors">{item.title}</h4>
-                       <p className="text-sm text-muted line-clamp-2">{item.summary}</p>
+          {activeTab === 'Technicals' && (
+            <div className="glass-card bg-[#162338]/70 p-6 flex flex-col gap-4">
+              <h3 className="text-base font-bold text-white">Quantitative Factor Engine</h3>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-[#8E9CAE]">Identified Trend Structure</span>
+                  <span className="font-bold text-white font-mono">{stock.trend}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-[#8E9CAE]">Volatility Factor</span>
+                  <span className="font-bold text-white font-mono">{stock.volatilityScore}/100</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-white/5">
+                  <span className="text-[#8E9CAE]">Recommended Entry Range</span>
+                  <span className="font-bold text-[#54D6B0] font-mono">{currencySymbol}{stock.buyRange}</span>
+                </div>
+                <div className="flex justify-between py-2">
+                  <span className="text-[#8E9CAE]">Downside Invalidation (Stop Loss)</span>
+                  <span className="font-bold text-[#FF5C75] font-mono">{currencySymbol}{stock.stopLoss}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === '14-Day Google News' && (
+            <div className="space-y-3">
+              {liveNews.length === 0 ? (
+                <div className="p-6 rounded-2xl bg-[#162338]/60 text-center text-xs text-[#8E9CAE]">
+                  No news items recorded in this interval for {stock.symbol}.
+                </div>
+              ) : (
+                liveNews.map((item) => (
+                  <div key={item.id} className="p-4 rounded-2xl bg-[#162338]/80 border border-white/5 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-mono text-[#8E9CAE]">
+                      <span className="font-bold text-[#54D6B0]">{item.publisher}</span>
+                      <span>{item.publishedDaysAgo}d ago</span>
                     </div>
-                  ))}
-               </div>
-             )}
-          </div>
+                    <h4 className="text-xs font-bold text-white">{item.title}</h4>
+                    <p className="text-[11px] text-[#8E9CAE]">{item.summary}</p>
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[10px]">
+                      <span className="text-[#54D6B0] font-mono">Sentiment: {item.sentiment}</span>
+                      <a href={item.url} target="_blank" rel="noreferrer" className="text-[#8E9CAE] hover:text-[#54D6B0] flex items-center gap-1">
+                        Read Story <ExternalLink size={10} />
+                      </a>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Private Notes' && (
+            <div className="glass-card bg-[#162338]/70 p-6 flex flex-col gap-3">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                Personal Investment Strategy Notes
+              </h3>
+              <textarea
+                value={notes}
+                onChange={handleNotesChange}
+                placeholder="Log your portfolio rationale, target rebalance triggers, or meeting notes..."
+                className="w-full h-36 bg-[#101B2B] border border-white/10 rounded-2xl p-4 text-xs text-white outline-none focus:border-[#54D6B0]/50 resize-none"
+              />
+              <span className="text-[10px] text-[#8E9CAE] text-right italic">
+                Notes persist locally in client browser storage.
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Sidebar (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-8">
-           {/* Recommendation Engine Card */}
-           <div className="glass-card !p-0 overflow-hidden border border-primary/20 glow-primary bg-gradient-to-br from-primary/10 to-transparent">
-              <div className="p-6 border-b border-white/5">
-                 <div className="flex items-center gap-3 mb-4">
-                    <Zap className="text-primary" />
-                    <h2 className="text-xl font-bold">AI Analyst Verdict</h2>
-                 </div>
-                 <div className="flex justify-between items-center p-4 bg-background rounded-2xl mb-6">
-                    <div className="flex flex-col">
-                       <span className="text-[10px] font-bold text-muted uppercase">Verdict</span>
-                       <span className="text-2xl font-black text-primary">{stock.recommendation}</span>
-                    </div>
-                    <div className="text-right">
-                       <span className="text-[10px] font-bold text-muted uppercase">Confidence</span>
-                       <span className="text-2xl font-black block">{stock.confidenceScore}%</span>
-                    </div>
-                 </div>
-
-                 <div className="space-y-4 mb-6">
-                    <div className="flex justify-between items-center text-sm">
-                       <span className="text-muted">Target Range:</span>
-                       <span className="font-bold text-success">₹{stock.buyRange}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                       <span className="text-muted">Exit Target:</span>
-                       <span className="font-bold">₹{stock.sellTarget}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                       <span className="text-muted">Stop Loss:</span>
-                       <span className="font-bold text-accent">₹{stock.stopLoss}</span>
-                    </div>
-                 </div>
-
-                 <Link to="/chat" className="btn-primary w-full shadow-lg shadow-primary/20">
-                    Ask AI about {stock.symbol}
-                 </Link>
+        {/* Right Column: AI Forecast Card & Chat Launcher (1 Col) */}
+        <div className="flex flex-col gap-6">
+          {forecast && (
+            <div className="glass-card bg-[#162338]/95 border border-[#54D6B0]/30 p-6 rounded-3xl shadow-xl flex flex-col gap-5">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-[#54D6B0]" />
+                <h3 className="text-base font-bold text-white">AI Quantitative Verdict</h3>
               </div>
-           </div>
 
-           {/* Investor Notes */}
-           <div className="glass-card">
-              <div className="flex items-center gap-3 mb-4">
-                 <FileText className="text-muted" />
-                 <h3 className="font-bold">Private Notes</h3>
+              <div className="p-4 rounded-2xl bg-[#101B2B] border border-white/5 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] text-[#8E9CAE] uppercase font-mono block">Action Signal</span>
+                  <span className="text-2xl font-black font-mono text-[#54D6B0]">{stock.recommendation}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-[#8E9CAE] uppercase font-mono block">AI Confidence</span>
+                  <span className="text-2xl font-black font-mono text-white">{stock.confidenceScore}%</span>
+                </div>
               </div>
-              <textarea 
-                value={notes}
-                onChange={handleNoteChange}
-                placeholder="Write your analysis, strategy or reminders for this stock..."
-                className="w-full h-40 bg-white/5 border border-white/10 rounded-2xl p-4 text-sm outline-none focus:border-primary/50 transition-all resize-none"
-              />
-              <p className="text-[10px] text-muted mt-2 text-right italic">Notes are saved locally.</p>
-           </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-[#8E9CAE]">Next Session:</span>
+                  <span className="font-bold text-white">{forecast.nextSessionOutlook}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-[#8E9CAE]">5-Day Target:</span>
+                  <span className="font-bold font-mono text-[#54D6B0]">{currencySymbol}{forecast.priceTargetRange.high}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="text-[#8E9CAE]">Stop Invalidation:</span>
+                  <span className="font-bold font-mono text-[#FF5C75]">{currencySymbol}{stock.stopLoss}</span>
+                </div>
+              </div>
+
+              <Link
+                to={`/chat`}
+                className="btn-primary w-full !py-3 text-xs font-bold text-center justify-center"
+              >
+                Consult AI Analyst on {stock.symbol}
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
