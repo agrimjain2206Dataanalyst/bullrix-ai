@@ -1,30 +1,53 @@
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Globe } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import { BENCHMARK_INDICES } from '../services/marketData';
 
 const Ticker = () => {
-  const indices = [
-    { name: 'NIFTY 50', price: '22,419.95', change: '+124.50', percent: '0.56%', up: true },
-    { name: 'SENSEX', price: '73,903.91', change: '+363.20', percent: '0.49%', up: true },
-    { name: 'BANK NIFTY', price: '48,201.05', change: '+254.10', percent: '0.53%', up: true },
-    { name: 'NIFTY IT', price: '34,120.45', change: '-85.30', percent: '0.25%', up: false },
-    { name: 'USD/INR', price: '83.45', change: '+0.02', percent: '0.02%', up: true },
-    { name: 'BRENT OIL', price: '82.30', change: '-1.45', percent: '1.73%', up: false },
-    { name: 'GOLD BEES', price: '58.45', change: '-0.15', percent: '0.26%', up: false },
-  ];
-
   return (
-    <div className="fixed top-20 left-0 right-0 h-10 bg-background/40 backdrop-blur-xl border-b border-white/5 z-40 overflow-hidden flex items-center">
-      <div className="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap items-center py-1">
-        {[...indices, ...indices, ...indices].map((item, index) => (
-          <div key={index} className="flex items-center gap-3 px-8 border-r border-white/5">
-            <span className="text-[10px] font-black text-muted tracking-tighter uppercase">{item.name}</span>
-            <span className="text-xs font-black tracking-tight">{item.price}</span>
-            <div className={`flex items-center gap-0.5 text-[10px] font-black ${item.up ? 'text-success' : 'text-accent'}`}>
-              {item.up ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-              {item.percent}
+    <div className="fixed top-20 left-0 right-0 h-10 bg-[#0B131E]/95 backdrop-blur-md border-b border-[#54D6B0]/10 z-40 overflow-hidden flex items-center">
+      <div className="flex animate-marquee whitespace-nowrap items-center py-1">
+        {[...BENCHMARK_INDICES, ...BENCHMARK_INDICES, ...BENCHMARK_INDICES].map((item, index) => {
+          const isUp = item.percentChange >= 0;
+          return (
+            <div
+              key={`${item.symbol}-${index}`}
+              className="flex items-center gap-3 px-6 border-r border-white/5 text-xs font-mono"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-[#F3F5F7] tracking-tight">{item.name}</span>
+                <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-white/5 text-[#8E9CAE]">
+                  {item.exchange}
+                </span>
+              </div>
+
+              <span className="font-semibold text-white">
+                {item.currency === 'INR' ? '₹' : '$'}
+                {item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+
+              <div
+                className={`flex items-center gap-0.5 font-bold ${isUp ? 'text-[#54D6B0]' : 'text-[#FF5C75]'
+                  }`}
+              >
+                {isUp ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                <span>
+                  {isUp ? '+' : ''}
+                  {item.percentChange.toFixed(2)}%
+                </span>
+              </div>
+
+              {item.isDelayed && (
+                <div
+                  className="flex items-center gap-1 text-[9px] text-[#8E9CAE]/80"
+                  title="Exchange data delayed by 15 mins for free-tier compliance"
+                >
+                  <Clock size={10} />
+                  <span>15m</span>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

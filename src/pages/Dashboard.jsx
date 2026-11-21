@@ -1,148 +1,278 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import stocks from '../data/stocks.json';
-import StockCard from '../components/StockCard';
-import { 
-  Sparkles, TrendingUp, Zap, Target, Search, 
-  Filter, Newspaper, ArrowRight, ChevronRight, Globe
-} from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { 
+  Sparkles, 
+  TrendingUp, 
+  Search, 
+  ArrowRight, 
+  Clock, 
+  Activity, 
+  ShieldCheck, 
+  Newspaper, 
+  Compass, 
+  ChevronRight,
+  TrendingDown,
+  Zap,
+  Filter
+} from 'lucide-react';
+import { BENCHMARK_INDICES, MARKET_UNIVERSE } from '../services/marketData';
+import { NewsIntelligenceService } from '../services/newsService';
+import StockCard from '../components/StockCard';
 
 const Dashboard = () => {
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [search, setSearch] = useState('');
+  const [activeMarket, setActiveMarket] = useState('All');
+  const [activeCap, setActiveCap] = useState('All');
 
-  const globalNews = [
-    { title: "Crude Oil prices hit 6-month low, positive for Indian OMCs", impact: "Positive" },
-    { title: "Rupee shows resilience against USD amid global volatility", impact: "Neutral" },
-    { title: "FIIs turn net buyers in Indian equity markets", impact: "Very Positive" },
-    { title: "Tech sector anticipates strong quarterly guidance", impact: "Positive" }
-  ];
+  const recentNews = useMemo(() => {
+    return NewsIntelligenceService.getRolling14DaysNews('ALL').slice(0, 3);
+  }, []);
 
   const filteredStocks = useMemo(() => {
-    return stocks.filter(s => {
-      const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.symbol.toLowerCase().includes(search.toLowerCase());
-      const matchesFilter = activeFilter === "All" || s.marketCapCategory === activeFilter;
-      return matchesSearch && matchesFilter;
+    return MARKET_UNIVERSE.filter((s) => {
+      const matchSearch =
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.symbol.toLowerCase().includes(search.toLowerCase()) ||
+        s.sector.toLowerCase().includes(search.toLowerCase());
+      const matchMarket = activeMarket === 'All' || s.market === activeMarket;
+      const matchCap = activeCap === 'All' || s.marketCapCategory === activeCap;
+      return matchSearch && matchMarket && matchCap;
     });
-  }, [search, activeFilter]);
+  }, [search, activeMarket, activeCap]);
+
+  // Gainers & Losers
+  const topGainers = useMemo(() => {
+    return [...MARKET_UNIVERSE].sort((a, b) => b.percentChange - a.percentChange).slice(0, 3);
+  }, []);
+
+  const topLosers = useMemo(() => {
+    return [...MARKET_UNIVERSE].sort((a, b) => a.percentChange - b.percentChange).slice(0, 3);
+  }, []);
 
   return (
-    <div className="pt-28 pb-12 px-8 max-w-[1600px] mx-auto">
-      {/* Global News Ticker */}
-      <div className="mb-8 flex items-center gap-4 bg-primary/5 border border-primary/10 rounded-2xl p-4 overflow-hidden relative group">
-         <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest whitespace-nowrap border-r border-primary/20 pr-4 z-10">
-            <Globe size={16} className="animate-pulse" />
-            Global Pulse
-         </div>
-         <div className="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap gap-12 items-center">
-            {globalNews.concat(globalNews).map((news, i) => (
-              <div key={i} className="flex items-center gap-3">
-                 <span className="text-sm font-medium">{news.title}</span>
-                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${news.impact.includes('Positive') ? 'bg-success/20 text-success' : 'bg-muted/20 text-muted'}`}>
-                    {news.impact}
-                 </span>
+    <div className="pt-28 pb-16 px-4 lg:px-8 max-w-[1600px] mx-auto flex flex-col gap-10">
+      {/* Benchmark Indices Overview Cards */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white tracking-tight">Benchmark Overview</h2>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-[#54D6B0]/15 text-[#54D6B0] px-2 py-0.5 rounded">
+              Verified Feeds
+            </span>
+          </div>
+          <span className="text-xs text-[#8E9CAE] flex items-center gap-1 font-mono">
+            <Clock size={12} /> Standard 15m delay
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {BENCHMARK_INDICES.map((idx) => {
+            const isUp = idx.percentChange >= 0;
+            return (
+              <div
+                key={idx.symbol}
+                className="glass-card bg-[#162338]/80 border border-white/5 hover:border-[#54D6B0]/30 flex flex-col justify-between p-4"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-bold text-white">{idx.name}</span>
+                  <span className="text-[9px] uppercase font-mono px-1 py-0.2 rounded bg-white/5 text-[#8E9CAE]">
+                    {idx.market}
+                  </span>
+                </div>
+                <div className="my-2">
+                  <span className="text-xl font-black font-mono text-white block">
+                    {idx.currency === 'INR' ? '₹' : '$'}
+                    {idx.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </span>
+                  <span
+                    className={`text-xs font-bold font-mono ${
+                      isUp ? 'text-[#54D6B0]' : 'text-[#FF5C75]'
+                    }`}
+                  >
+                    {isUp ? '+' : ''}
+                    {idx.percentChange.toFixed(2)}% ({idx.change > 0 ? '+' : ''}
+                    {idx.change.toFixed(2)})
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-[#8E9CAE] pt-2 border-t border-white/5">
+                  <span>H: {idx.high}</span>
+                  <span>L: {idx.low}</span>
+                </div>
               </div>
-            ))}
-         </div>
-      </div>
-
-      {/* Hero Section */}
-      <section className="mb-12">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-primary/30 via-surface to-background border border-white/5 p-12 flex flex-col lg:flex-row items-center justify-between gap-12"
-        >
-          {/* Background Decorative Elements */}
-          <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
-             <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[60%] bg-primary blur-[120px] rounded-full" />
-             <div className="absolute bottom-[-20%] left-[-10%] w-[50%] h-[70%] bg-secondary/20 blur-[150px] rounded-full" />
-          </div>
-
-          <div className="relative z-10 flex flex-col gap-6 max-w-2xl text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-black uppercase tracking-widest w-fit mx-auto lg:mx-0">
-              <Sparkles size={14} />
-              Pro Investor Intelligence
-            </div>
-            <h1 className="text-5xl lg:text-7xl font-black leading-[1.1] tracking-tighter">
-              The Next Gen <br /><span className="gradient-text">Stock Intel</span> Platform.
-            </h1>
-            <p className="text-muted text-lg lg:text-xl leading-relaxed font-medium">
-              Real-time deep analytics, AI-generated verdicts, and professional-grade charting for 50+ Nifty leaders.
-            </p>
-            <div className="flex flex-wrap gap-4 mt-4 justify-center lg:justify-start">
-              <Link to="/chat" className="btn-primary !px-8 !py-4 text-lg">
-                Start AI Analysis
-                <ArrowRight size={20} />
-              </Link>
-              <Link to="/analysis" className="btn-secondary !px-8 !py-4 text-lg">
-                Top Picks 2026
-              </Link>
-            </div>
-          </div>
-
-          <div className="relative z-10 lg:w-2/5 grid grid-cols-2 gap-4">
-             {[
-               { label: 'AI Score', val: '94', icon: Target, col: 'text-primary' },
-               { label: 'Reliability', val: '99%', icon: Zap, col: 'text-success' },
-               { label: 'Coverage', val: '50+', icon: Newspaper, col: 'text-secondary' },
-               { label: 'Uptime', val: '100%', icon: TrendingUp, col: 'text-primary' },
-             ].map((item, i) => (
-               <div key={i} className="glass p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-center text-center hover:scale-105 transition-all duration-500">
-                  <item.icon className={`${item.col} mb-3`} size={32} />
-                  <p className="text-2xl font-black">{item.val}</p>
-                  <p className="text-[10px] font-bold text-muted uppercase tracking-widest">{item.label}</p>
-               </div>
-             ))}
-          </div>
-        </motion.div>
+            );
+          })}
+        </div>
       </section>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto">
-          {['All', 'Large', 'Mid', 'Small'].map(filter => (
-            <button 
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeFilter === filter ? 'bg-white/10 text-white shadow-xl' : 'text-muted hover:text-white'}`}
+      {/* AI Market Sentiment & Intelligence Banner */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 rounded-3xl bg-gradient-to-r from-[#162338] via-[#1A2942] to-[#121E30] border border-[#54D6B0]/20 p-6 sm:p-8 flex flex-col justify-between shadow-xl">
+          <div className="flex flex-col gap-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#54D6B0]/15 text-[#54D6B0] text-xs font-bold w-fit">
+              <Sparkles size={14} />
+              AI Intelligence Digest • Global Macro
+            </div>
+            <h3 className="text-2xl font-extrabold text-white tracking-tight">
+              Indian Large-Caps Exhibit Constructive Absorption; US Mega-Cap AI Capex Accelerates
+            </h3>
+            <p className="text-xs sm:text-sm text-[#8E9CAE] leading-relaxed max-w-2xl">
+              NIFTY 50 institutional breadth holds steady (38:12 advance-decline ratio). DII liquidity balances global macro cross-currents. Crude softening below $83/bbl provides sustained tailwinds for domestic operating margins.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/5">
+            <Link to="/chat" className="btn-primary !py-2.5 !px-5 text-xs font-bold">
+              Analyze Current Market State <ArrowRight size={15} />
+            </Link>
+            <Link to="/predictions" className="btn-secondary !py-2.5 !px-5 text-xs font-semibold">
+              Explore 5-Day Forecasts
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick Movers (Gainers & Losers) */}
+        <div className="glass-card bg-[#162338]/80 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Activity size={16} className="text-[#54D6B0]" />
+                Top Market Movers
+              </h4>
+              <span className="text-[10px] text-[#8E9CAE] uppercase font-mono">Live Session</span>
+            </div>
+
+            <div className="space-y-2">
+              {topGainers.map((s) => (
+                <Link
+                  key={s.id}
+                  to={`/stock/${s.id}`}
+                  className="flex items-center justify-between p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-white">{s.symbol}</span>
+                    <span className="text-[10px] text-[#8E9CAE] block">{s.name}</span>
+                  </div>
+                  <span className="text-xs font-bold font-mono text-[#54D6B0]">
+                    +{s.percentChange}%
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/5 mt-4">
+            <Link
+              to="/markets/india"
+              className="text-xs font-bold text-[#54D6B0] hover:underline flex items-center justify-between"
             >
-              {filter} Cap
-            </button>
+              <span>View Full Indian & Global Tables</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Filter & Stock Discovery Engine */}
+      <section>
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Market Filter */}
+            <div className="flex items-center gap-1 bg-[#162338] p-1 rounded-xl border border-white/5">
+              {['All', 'India', 'US'].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setActiveMarket(m)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeMarket === m
+                      ? 'bg-[#54D6B0] text-[#0B131E]'
+                      : 'text-[#8E9CAE] hover:text-white'
+                  }`}
+                >
+                  {m === 'All' ? 'All Markets' : m === 'India' ? '🇮🇳 India (NSE)' : '🇺🇸 US (NASDAQ)'}
+                </button>
+              ))}
+            </div>
+
+            {/* Cap Category Filter */}
+            <div className="flex items-center gap-1 bg-[#162338] p-1 rounded-xl border border-white/5">
+              {['All', 'Large', 'Mid', 'Mega'].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setActiveCap(c)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    activeCap === c
+                      ? 'bg-white/10 text-white font-bold'
+                      : 'text-[#8E9CAE] hover:text-white'
+                  }`}
+                >
+                  {c === 'All' ? 'All Caps' : `${c} Cap`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative w-full md:w-80">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search ticker, company, or sector..."
+              className="w-full bg-[#162338] border border-white/10 rounded-xl py-2.5 px-4 pr-10 text-xs text-white outline-none focus:border-[#54D6B0]/50"
+            />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8E9CAE]" />
+          </div>
+        </div>
+
+        {/* Stock Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <AnimatePresence>
+            {filteredStocks.map((stock) => (
+              <StockCard key={stock.id} stock={stock} />
+            ))}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* Rolling 14-Day News Stream Highlight */}
+      <section className="bg-[#162338]/60 border border-white/5 rounded-3xl p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Newspaper size={20} className="text-[#54D6B0]" />
+            <h3 className="text-lg font-bold text-white">Rolling 14-Day Financial News Stream</h3>
+          </div>
+          <Link to="/news" className="text-xs font-bold text-[#54D6B0] hover:underline flex items-center gap-1">
+            <span>View News Center</span> <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {recentNews.map((news) => (
+            <div
+              key={news.id}
+              className="p-4 rounded-2xl bg-[#101B2B] border border-white/5 hover:border-[#54D6B0]/25 transition-all flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between text-[10px] text-[#8E9CAE] mb-2 font-mono">
+                  <span className="font-bold text-[#54D6B0]">{news.publisher}</span>
+                  <span>{news.publishedDaysAgo}d ago</span>
+                </div>
+                <h4 className="text-xs font-bold text-white line-clamp-2 mb-2">{news.title}</h4>
+                <p className="text-[11px] text-[#8E9CAE] line-clamp-2 leading-relaxed">
+                  {news.summary}
+                </p>
+              </div>
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#54D6B0] bg-[#54D6B0]/10 px-2 py-0.5 rounded">
+                  {news.sentiment}
+                </span>
+                <span className="text-[10px] text-[#8E9CAE] uppercase">{news.category}</span>
+              </div>
+            </div>
           ))}
         </div>
-
-        <div className="relative w-full md:w-96">
-          <input 
-            type="text" 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by ticker or name..." 
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-6 outline-none focus:border-primary/50 transition-all text-sm pr-12 font-medium"
-          />
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-        </div>
-      </div>
-
-      {/* Stock Grid */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3">
-          <h2 className="text-3xl font-black tracking-tight">Trending Insight</h2>
-          <span className="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-black rounded uppercase">Live</span>
-        </div>
-        <Link to="/analysis" className="text-muted hover:text-white font-bold flex items-center gap-2 transition-colors">
-          View Detailed Analytics <ChevronRight size={18} />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-        <AnimatePresence>
-          {filteredStocks.map((stock) => (
-            <StockCard key={stock.id} stock={stock} />
-          ))}
-        </AnimatePresence>
-      </div>
+      </section>
     </div>
   );
 };
